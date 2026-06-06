@@ -1,0 +1,21 @@
+// This file would be placed in your Vercel project's /api folder
+export default async function handler(req, res) {
+    const { des, dist } = req.query;
+    
+    // Determine which NASA endpoint to call
+    let url = "https://ssd-api.jpl.nasa.gov/";
+    if (des) url += `sbdb.api?sstr=${encodeURIComponent(des)}`;
+    else if (dist) url += `cad.api?dist-max=${encodeURIComponent(dist)}`;
+    else return res.status(400).json({ error: "Missing parameters" });
+
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        // Add CORS headers so your frontend can read the response
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.status(200).json(data);
+    } catch (error) {
+        res.status(500).json({ error: "Failed to fetch from NASA" });
+    }
+}
