@@ -1525,17 +1525,13 @@
                 lastTime = now;
             }
             
-            // Revolve Asteroid Belt
-            if (beltGroup && isPlaying) {
-                beltGroup.rotation.y = accumulatedTime * 0.011; 
-            }
-
             planetMeshes.forEach((planetObj, index) => {
                 const p = planetConfigs[index];
                 const angle = accumulatedTime * p.v + index; 
                 planetObj.position.x = p.a * Math.cos(angle);
                 planetObj.position.z = p.a * Math.sin(angle);
-                planetObj.rotation.y += p.v * 2; 
+                
+                // Planet spinning removed to stabilize satellite orbital trails
                 
                 if (planetObj.userData.moonsGroup) {
                     const distToCam = camera.position.distanceTo(planetObj.position);
