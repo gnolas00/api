@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Solar System Simulation - Nolasco Productions</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        /* Nolasco Productions Intro CSS */
+        html, body { background-color: #000000; margin: 0; padding: 0; width: 100%; height: 100%; }
+
+        #nolasco-intro {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #000000;
+            z-index: 9999;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            overflow: hidden;
+            transition: opacity 0.5s ease;
+            pointer-events: none; 
+        }
+
+        .nolasco-wrapper {
+            animation: cinematicFade 4s ease-in-out forwards;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            width: 100%; padding: 0 20px;
+        }
+
+        .nolasco-title {
+            color: #facc15; 
+            font-family: 'Press Start 2P', monospace;
+            font-size: clamp(2rem, 6vw, 4.5rem);
+            margin-bottom: 1.5rem;
+            text-align: center;
+            line-height: 1.6;
+            text-shadow: 3px 3px 0 #b45309, 6px 6px 0 #78350f, 9px 9px 15px rgba(0,0,0,0.8);
+            -webkit-text-stroke: 1px #fef08a;
+        }
+
+        .nolasco-subtitle {
+            color: rgba(255, 255, 255, 0.9);
+            font-family: 'Press Start 2P', monospace;
+            font-size: clamp(1rem, 3vw, 1.5rem);
+            text-align: center;
+            text-shadow: 2px 2px 0 #1e3a8a, 4px 4px 0 #172554;
+        }
+
+        .nolasco-dots { margin-top: 3rem; display: flex; gap: 1rem; justify-content: center; }
+        .n-dot { width: 12px; height: 12px; border-radius: 2px; animation: nolascoBounce 1s infinite; }
+        .n-dot-1 { background-color: #ef4444; box-shadow: 2px 2px 0 #991b1b; animation-delay: 0s; }
+        .n-dot-2 { background-color: #facc15; box-shadow: 2px 2px 0 #a16207; animation-delay: 0.2s; }
+        .n-dot-3 { background-color: #22c55e; box-shadow: 2px 2px 0 #166534; animation-delay: 0.4s; }
+
+        @keyframes cinematicFade {
+            0% { opacity: 0; transform: scale(0.9); filter: blur(5px); }
+            20% { opacity: 1; transform: scale(1); filter: blur(0px); }
+            80% { opacity: 1; transform: scale(1.05); filter: blur(0px); }
+            100% { opacity: 0; transform: scale(1.5); filter: blur(15px); }
+        }
+
+        @keyframes nolascoBounce {
+            0%, 100% { transform: translateY(-25%); animation-timing-function: cubic-bezier(0.8, 0, 1, 1); }
+            50% { transform: translateY(0); animation-timing-function: cubic-bezier(0, 0, 0.2, 1); }
+        }
+
+        /* Standard App CSS */
+        body { margin: 0; padding: 0; overflow: hidden; background: #000; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; touch-action: manipulation; }
+        
+        #ui-container { position: absolute; top: 20px; right: 20px; z-index: 100; display: flex; flex-direction: column; align-items: flex-end; pointer-events: none; }
+        #ui-container > * { pointer-events: auto; }
+        
+        #sync-status { position: absolute; top: 20px; left: 20px; color: #ffcc00; font-size: 0.85rem; font-weight: bold; background: rgba(10,15,30,0.7); backdrop-filter: blur(10px); padding: 8px 15px; border-radius: 8px; border: 1px solid rgba(255,204,0,0.3); pointer-events: none; text-transform: uppercase; letter-spacing: 1px; z-index: 50; }
+        
+        .panel { background: rgba(15, 20, 25, 0.85); backdrop-filter: blur(12px); padding: 15px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 10px 30px rgba(0,0,0,0.8); color: #fff; }
+        
+        #menu-main { display: none; width: 250px; margin-top: 10px; }
+        .menu-btn { background: rgba(40, 45, 60, 0.8); color: white; border: 1px solid rgba(255, 255, 255, 0.2); padding: 10px; border-radius: 6px; cursor: pointer; margin-bottom: 5px; width: 100%; text-align: left; transition: 0.3s; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; }
+        .menu-btn:hover { background: rgba(0, 255, 204, 0.2); border-color: #00ffcc; box-shadow: 0 0 10px rgba(0,255,204,0.2); }
+        .submenu { padding-left: 10px; margin: 10px 0; border-left: 2px solid #00ffcc; display: none; }
+        
+        input[type="text"], input[type="number"], select, input[type="datetime-local"] { width: 100%; box-sizing: border-box; background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 8px; border-radius: 4px; margin-bottom: 10px; }
+        input[type="datetime-local"] { color-scheme: dark; }
+        
+        #suggestions { position: absolute; width: calc(100% - 30px); background: #111; border: 1px solid #444; border-top: none; max-height: 150px; overflow-y: auto; z-index: 20; display: none; border-radius: 0 0 6px 6px; }
+        .suggestion-item { padding: 8px; cursor: pointer; font-size: 0.8rem; border-bottom: 1px solid #333; }
+        .suggestion-item:hover { background: rgba(0,255,204,0.3); }
+        
+        h3 { margin-top: 5px; font-weight: 600; letter-spacing: 1px; color: #00ffcc; font-size: 0.75rem; text-transform: uppercase; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px; }
+        label { font-size: 0.8rem; color: #bbb; display: block; margin-bottom: 5px; }
+        #current-time-display { font-size: 0.7rem; color: #00ffcc; margin-bottom: 10px; font-family: monospace; }
+        
+        #tracker-panel { display: none; position: absolute; bottom: 20px; left: 20px; width: 250px; z-index: 10; }
+        
+        /* Interactive Target Info HUD */
+        #info-panel { position: absolute; top: 70px; left: 20px; width: 280px; z-index: 10; display: none; border-left: 3px solid #00ffcc; pointer-events: none; }
+        #info-title { font-size: 1.2rem; font-weight: bold; color: #00ffcc; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 2px; }
+        .info-stat { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 5px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 3px; }
+        .info-label { color: #aaa; }
+        .info-val { font-weight: bold; font-family: monospace; color: #fff; }
+        #unfocus-hint { font-size: 0.7rem; color: #888; margin-top: 10px; font-style: italic; text-align: center; }
+        
+    </style>
+</head>
+<body>
+    <div id="sync-status">● Paused</div>
+    
+    <!-- Target HUD -->
+    <div id="info-panel" class="panel">
+        <div id="info-title">Planet Name</div>
+        <div class="info-stat"><span class="info-label">Type:</span> <span id="info-type" class="info-val">-</span></div>
+        <div class="info-stat"><span class="info-label">Speed:</span> <span id="info-vel" class="info-val">-</span></div>
+        <div class="info-stat"><span class="info-label">Dist from Sun:</span> <span id="info-dist" class="info-val">-</span></div>
+        <div class="info-stat"><span class="info-label">Moons:</span> <span id="info-moons" class="info-val">-</span></div>
+        <div id="unfocus-hint">Click empty space to unfocus</div>
+    </div>
+
+    <div id="ui-container">
+        <button class="menu-btn" style="width: auto; padding: 10px 20px;" onclick="document.getElementById('menu-main').style.display = (document.getElementById('menu-main').style.display === 'block') ? 'none' : 'block'">COMMAND MENU</button>
+        <div id="menu-main" class="panel">
+            <button class="menu-btn" id="play-pause-btn" onclick="togglePlay()">PLAY MOVEMENT</button>
+            <button class="menu-btn" onclick="toggleMenu('time-submenu')">TIME CONTROLS</button>
+            <div id="time-submenu" class="submenu">
+                <div id="current-time-display">Current: Live</div>
+                <label>Target Date/Time:</label>
+                <input type="datetime-local" id="time-picker" onchange="setSimulationTime()">
+                <button class="menu-btn" onclick="resetToRealTime()">SYNC TO NOW</button>
+            </div>
+            <button class="menu-btn" onclick="toggleMenu('object-submenu')">SEARCH OBJECTS</button>
+            <div id="object-submenu" class="submenu" style="position:relative;">
+                <h3>SEARCH NEO / COMET</h3>
+                <input type="text" id="obj-search" placeholder="e.g. Ceres" oninput="showSuggestions(this.value)">
+                <div id="suggestions"></div>
+                <button class="menu-btn" style="margin-top: 10px;" onclick="searchSpecificObject()">INITIATE SEARCH</button>
+                <label style="margin-top:10px;"><input type="checkbox" id="show-orbit" checked> Show Trajectory</label>
+            </div>
+            <button class="menu-btn" onclick="document.getElementById('tracker-panel').style.display='block'">CAD COMET TRACKER</button>
+        </div>
+    </div>
+
+    <div id="tracker-panel" class="panel">
+        <span style="float:right; cursor:pointer; color:#888;" onclick="this.parentElement.style.display='none'">✕</span>
+        <h3>COMET TELEMETRY</h3>
+        <label for="obj-limit">Max Objects (Limit 500):</label>
+        <input type="number" id="obj-limit" min="1" max="500" value="10">
+        <label for="dist-select">Max Approach Distance:</label>
+        <select id="dist-select">
+            <option value="0.05">4.6M miles (0.05 AU)</option>
+            <option value="0.25">23.2M miles (0.25 AU)</option>
+            <option value="0.5" selected>46.5M miles (0.5 AU)</option>
+            <option value="1.0">93.0M miles (1.0 AU)</option>
+            <option value="2.0">186.0M miles (2.0 AU)</option>
+            <option value="5.0">465.0M miles (5.0 AU)</option>
+        </select>
+        <button class="menu-btn" onclick="fetchForeignObject()">FETCH LIVE DATA</button>
+        <p id="tracker-status" style="font-size:0.8rem; color:#aaa; margin-top:5px;"></p>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
+    <script>
+        // --- Core Variables ---
+        let scene, camera, renderer, controls;
+        let planetMeshes = [], trackedMeshes = [], interactableObjects = [];
+        let simulationOffset = 0, isPlaying = false, lastTime = Date.now(), accumulatedTime = 0;
+        let focusedTarget = null; // Currently clicked object
+        
+        let localDb = ["Ceres", "433 Eros", "Vesta", "Pallas"];
+        const NASA_API_BASE = "https://ssd-api.jpl.nasa.gov";
+
+        // --- Realistic Planet Configs with Moons & Rings ---
+        const planetConfigs = [
+            { name: "Mercury", a: 6, e: 0.2, type: "terrestrial", color: 0x888888, size: 0.38, v: 0.068, moons: [], rough: 0.9 },
+            { name: "Venus", a: 9, e: 0.0, type: "terrestrial", color: 0xe3bb76, size: 0.95, v: 0.037, moons: [], rough: 0.4 },
+            { name: "Earth", a: 13, e: 0.02, type: "terrestrial", color: 0x2e72b9, size: 1.0, v: 0.021, rough: 0.6,
+              moons: [{ name: "Luna", size: 0.27, dist: 1.5, speed: 0.1 }] },
+            { name: "Mars", a: 17, e: 0.09, type: "terrestrial", color: 0xc1440e, size: 0.53, v: 0.014, rough: 0.8,
+              moons: [{ name: "Phobos", size: 0.08, dist: 0.8, speed: 0.15 }, { name: "Deimos", size: 0.05, dist: 1.2, speed: 0.12 }] },
+            { name: "Jupiter", a: 28, e: 0.05, type: "gas_giant", color: 0xd6a57e, size: 3.0, v: 0.008, rough: 0.3,
+              rings: { inner: 3.5, outer: 4.5, color: 0xaa9988, opacity: 0.3 },
+              moons: [{ name: "Io", size: 0.2, dist: 3.8, speed: 0.08 }, { name: "Europa", size: 0.18, dist: 4.5, speed: 0.06 }, { name: "Ganymede", size: 0.25, dist: 5.5, speed: 0.04 }, { name: "Callisto", size: 0.22, dist: 6.8, speed: 0.03 }] },
+            { name: "Saturn", a: 42, e: 0.05, type: "gas_giant", color: 0xf4d03f, size: 2.5, v: 0.005, rough: 0.3,
+              rings: { inner: 3.0, outer: 6.5, color: 0xddccaa, opacity: 0.8 },
+              moons: [{ name: "Titan", size: 0.25, dist: 7.5, speed: 0.05 }, { name: "Enceladus", size: 0.1, dist: 4.0, speed: 0.09 }] },
+            { name: "Uranus", a: 56, e: 0.05, type: "ice_giant", color: 0x9bd7d5, size: 1.8, v: 0.003, rough: 0.2,
+              rings: { inner: 2.2, outer: 3.2, color: 0xffffff, opacity: 0.2 },
+              moons: [{ name: "Titania", size: 0.15, dist: 3.5, speed: 0.06 }] },
+            { name: "Neptune", a: 70, e: 0.01, type: "ice_giant", color: 0x3e54e8, size: 1.7, v: 0.002, rough: 0.2,
+              moons: [{ name: "Triton", size: 0.18, dist: 3.0, speed: 0.07 }] }
+        ];
+
+        // --- Procedural Texture Generators (No external images = No CORS errors) ---
+        function generatePlanetTexture(name, type, baseColor) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512; canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+            
+            // Base color
+            ctx.fillStyle = '#' + baseColor.toString(16).padStart(6, '0');
+            ctx.fillRect(0, 0, 512, 256);
+
+            // Add bands for gas giants
+            if (type === "gas_giant" || type === "ice_giant") {
+                for (let y = 0; y < 256; y += Math.random() * 10 + 5) {
+                    ctx.fillStyle = `rgba(255,255,255,${Math.random() * 0.15})`;
+                    if (Math.random() > 0.5) ctx.fillStyle = `rgba(0,0,0,${Math.random() * 0.15})`;
+                    ctx.fillRect(0, y, 512, Math.random() * 15 + 2);
+                }
+                // Add the Great Red Spot for Jupiter
+                if (name === "Jupiter") {
+                    ctx.fillStyle = 'rgba(180, 50, 20, 0.6)';
+                    ctx.beginPath();
+                    ctx.ellipse(256, 170, 30, 15, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            } else {
+                // Add noise/craters for terrestrial
+                for(let i=0; i<1000; i++) {
+                    ctx.fillStyle = (name==="Earth" && i<700) ? 'rgba(34, 139, 34, 0.6)' : `rgba(0,0,0,${Math.random()*0.2})`;
+                    ctx.beginPath();
+                    ctx.arc(Math.random()*512, Math.random()*256, Math.random()*3+1, 0, Math.PI*2);
+                    ctx.fill();
+                }
+                // Earth Clouds
+                if (name === "Earth") {
+                    for(let i=0; i<300; i++) {
+                        ctx.fillStyle = 'rgba(255,255,255,0.4)';
+                        ctx.beginPath();
+                        ctx.arc(Math.random()*512, Math.random()*256, Math.random()*8+2, 0, Math.PI*2);
+                        ctx.fill();
+                    }
+                }
+            }
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.anisotropy = 16;
+            return texture;
+        }
+
+        function generateRingTexture(colorHex) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 256; canvas.height = 1;
+            const ctx = canvas.getContext('2d');
+            const colStr = '#' + colorHex.toString(16).padStart(6, '0');
+            
+            // Create striped gradient
+            const grd = ctx.createLinearGradient(0, 0, 256, 0);
+            grd.addColorStop(0, 'rgba(0,0,0,0)');
+            grd.addColorStop(0.1, colStr);
+            grd.addColorStop(0.3, 'rgba(0,0,0,0.1)');
+            grd.addColorStop(0.5, colStr);
+            grd.addColorStop(0.8, colStr);
+            grd.addColorStop(1, 'rgba(0,0,0,0)');
+            
+            ctx.fillStyle = grd;
+            ctx.fillRect(0, 0, 256, 1);
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        // --- Interaction & Raycasting ---
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        function onMouseClick(event) {
+            // Adjust for UI clicks
+            if (event.target.tagName === 'BUTTON' || event.target.tagName === 'INPUT' || event.target.closest('.panel')) return;
+
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            // Intersect against our list of clickable planet/comet groups
+            const intersects = raycaster.intersectObjects(interactableObjects, true);
+
+            if (intersects.length > 0) {
+                // Find the parent group which holds the userData
+                let obj = intersects[0].object;
+                while (obj.parent && obj.parent.type === 'Group' && !obj.userData.isTarget) {
+                    obj = obj.parent;
+                }
+                if (obj.userData.isTarget) focusOnTarget(obj);
+            } else {
+                unfocusTarget();
+            }
+        }
+
+        function focusOnTarget(targetGroup) {
+            focusedTarget = targetGroup;
+            const data = targetGroup.userData;
+            
+            // Show UI
+            const panel = document.getElementById('info-panel');
+            panel.style.display = 'block';
+            document.getElementById('info-title').innerText = data.name;
+            document.getElementById('info-type').innerText = data.type || "NEO / Comet";
+            document.getElementById('info-vel').innerText = data.v ? (data.v * 100).toFixed(2) + " km/s" : "Dynamic";
+            document.getElementById('info-dist').innerText = data.a ? data.a.toFixed(2) + " AU" : "-";
+            document.getElementById('info-moons').innerText = data.moons ? data.moons.length : "0";
+
+            // Smoothly move camera using Tween
+            const targetPos = new THREE.Vector3();
+            targetGroup.getWorldPosition(targetPos);
+            
+            const size = data.size || 1;
+            const offset = new THREE.Vector3(size * 4, size * 2, size * 4);
+            const idealPos = targetPos.clone().add(offset);
+
+            new TWEEN.Tween(camera.position)
+                .to({ x: idealPos.x, y: idealPos.y, z: idealPos.z }, 1000)
+                .easing(TWEEN.Easing.Quadratic.Out)
+                .start();
+                
+            new TWEEN.Tween(controls.target)
+                .to({ x: targetPos.x, y: targetPos.y, z: targetPos.z }, 1000)
+                .easing(TWEEN.Easing.Quadratic.Out)
+                .start();
+        }
+
+        function unfocusTarget() {
+            focusedTarget = null;
+            document.getElementById('info-panel').style.display = 'none';
+        }
+
+        // --- UI Menu Functions ---
+        function togglePlay() {
+            isPlaying = !isPlaying;
+            document.getElementById('play-pause-btn').innerText = isPlaying ? "PAUSE MOVEMENT" : "PLAY MOVEMENT";
+            document.getElementById('sync-status').innerText = isPlaying ? "● SYSTEM ACTIVE" : "● PAUSED";
+            document.getElementById('sync-status').style.color = isPlaying ? "#00ffcc" : "#ffcc00";
+            lastTime = Date.now();
+        }
+
+        function toggleMenu(id) {
+            const menu = document.getElementById(id);
+            menu.style.display = (menu.style.display === 'block' ? 'none' : 'block');
+        }
+
+        function setSimulationTime() {
+            const picked = new Date(document.getElementById('time-picker').value).getTime();
+            accumulatedTime = (picked - Date.now()) / 1000;
+            updatePlanets();
+        }
+
+        function resetToRealTime() {
+            accumulatedTime = 0;
+            document.getElementById('sync-status').innerText = "● REAL-TIME MODE";
+        }
+
+        // --- Robust Data Fetching with Simulated Fallback ---
+        async function fetchWithFallback(targetUrl) {
+            try {
+                const response = await fetch(targetUrl, { mode: 'cors' });
+                if (response.ok) {
+                    const data = await response.json();
+                    if(data && (data.data || data.object)) return data; 
+                }
+            } catch (e) { console.warn("Direct fetch failed, trying proxies..."); }
+            
+            // Strong proxy list
+            const PROXIES = [
+                "https://api.allorigins.win/raw?url=",
+                "https://api.codetabs.com/v1/proxy?quest=",
+                "https://corsproxy.io/?"
+            ];
+            
+            for (const proxy of PROXIES) {
+                try {
+                    const response = await fetch(proxy + encodeURIComponent(targetUrl));
+                    if (response.ok) {
+                        const text = await response.text();
+                        try {
+                            const data = JSON.parse(text);
+                            if (data && (data.data || data.object)) return data;
+                            if (data && data.contents) return JSON.parse(data.contents);
+                        } catch(err) { continue; }
+                    }
+                } catch (e) { continue; }
+            }
+            
+            // Smart Fallback Mechanism: If network completely blocks API, use simulated telemetry to prevent crashing.
+            console.warn("All APIs unreachable. Using simulated telemetry to prevent crash.");
+            if (targetUrl.includes('cad.api')) {
+                return {
+                    simulated: true,
+                    data: Array.from({length: 5}).map((_, i) => [`Simulated NEO-${i+1}`, "2026-06-06", null, null, (Math.random() * 0.4 + 0.05).toFixed(4)])
+                };
+            } else if (targetUrl.includes('sbdb.api')) {
+                const urlParams = new URLSearchParams(targetUrl.split('?')[1]);
+                const des = urlParams.get('sstr') || "Unknown Object";
+                return {
+                    simulated: true,
+                    object: { fullname: des + " (Simulated)" },
+                    orbit: { elements: [{name: 'a', value: (Math.random()*2+1).toString()}, {name: 'e', value: (Math.random()*0.5+0.2).toString()}] }
+                };
+            }
+            
+            throw new Error("API unreachable. Proxies failed.");
+        }
+
+        async function updateDailyDatabase() {
+            try {
+                const today = new Date().toISOString().split('T')[0];
+                const data = await fetchWithFallback(`${NASA_API_BASE}/cad.api?date-min=${today}&limit=20`);
+                if (data.data && !data.simulated) localDb = [...new Set([...localDb, ...data.data.map(i => i[0])])];
+            } catch (e) {}
+        }
+
+        function showSuggestions(val) {
+            const list = document.getElementById('suggestions');
+            list.innerHTML = '';
+            if (!val) { list.style.display = 'none'; return; }
+            const matches = localDb.filter(o => o.toLowerCase().includes(val.toLowerCase()));
+            if (matches.length > 0) {
+                list.style.display = 'block';
+                matches.forEach(m => {
+                    const item = document.createElement('div');
+                    item.className = 'suggestion-item';
+                    item.innerText = m;
+                    item.onclick = () => { document.getElementById('obj-search').value = m; list.style.display = 'none'; };
+                    list.appendChild(item);
+                });
+            } else list.style.display = 'none';
+        }
+
+        // --- Comet/Asteroid Tracker ---
+        function clearTrackedObjects() {
+            trackedMeshes.forEach(obj => {
+                scene.remove(obj.group);
+                if (obj.orbit) scene.remove(obj.orbit);
+                interactableObjects = interactableObjects.filter(o => o !== obj.group);
+            });
+            trackedMeshes = [];
+        }
+
+        function createCometGeometry(baseSize) {
+            const geo = new THREE.IcosahedronGeometry(baseSize, 2);
+            const pos = geo.attributes.position;
+            for (let i = 0; i < pos.count; i++) {
+                const vec = new THREE.Vector3().fromBufferAttribute(pos, i);
+                vec.multiplyScalar(0.6 + Math.random() * 0.4); 
+                pos.setXYZ(i, vec.x, vec.y, vec.z);
+            }
+            geo.computeVertexNormals();
+            return geo;
+        }
+
+        function addTrackedObject(name, isPassing = false, distAu = null, true_a = null, true_e = null) {
+            const nucleusGeo = createCometGeometry(isPassing ? 0.3 : 0.2);
+            const nucleusMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8, flatShading: true });
+            const nucleus = new THREE.Mesh(nucleusGeo, nucleusMat);
+            
+            const tailGeo = new THREE.BufferGeometry();
+            const tailPoints = [];
+            for(let i=0; i<25; i++) tailPoints.push(new THREE.Vector3(i * 0.4, (Math.random()-0.5)*0.2, (Math.random()-0.5)*0.2));
+            tailGeo.setFromPoints(tailPoints);
+            const tailMat = new THREE.LineBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending });
+            const tail = new THREE.Line(tailGeo, tailMat);
+
+            const cometObj = new THREE.Group();
+            cometObj.add(nucleus);
+            cometObj.add(tail);
+
+            let a, e;
+            if (true_a !== null && true_e !== null) { a = true_a * 13; e = true_e; } 
+            else { e = 0.5 + Math.random() * 0.4; a = (distAu ? (distAu * 13) : (15 + Math.random() * 5)) / (1 - e); }
+            if (a > 2000) a = 2000;
+            if (e > 0.99) e = 0.99;
+
+            const b = a * Math.sqrt(1 - e * e);
+            cometObj.position.set(a * (1 - e), 0, 0);
+            
+            const orbitGroup = new THREE.Group();
+            orbitGroup.add(cometObj);
+            
+            // Set UserData for Raycaster Info Box
+            cometObj.userData = { isTarget: true, name: name, type: isPassing ? "Close Approach NEO" : "Tracked Comet", a: a/13, v: null };
+            interactableObjects.push(cometObj);
+            
+            let orbitLine = null;
+            if (document.getElementById('show-orbit').checked) {
+                const curve = new THREE.EllipseCurve(-a * e, 0, a, b, 0, 2 * Math.PI, false, 0);
+                const orbitGeo = new THREE.BufferGeometry().setFromPoints(curve.getPoints(128));
+                orbitLine = new THREE.Line(orbitGeo, new THREE.LineBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.3 }));
+                orbitLine.rotation.x = Math.PI / 2;
+                orbitGroup.add(orbitLine);
+            }
+            
+            orbitGroup.rotation.y = Math.random() * Math.PI * 2; 
+            orbitGroup.rotation.x = (Math.random() - 0.5) * 1.5; 
+            orbitGroup.rotation.z = (Math.random() - 0.5) * 1.5;
+
+            scene.add(orbitGroup);
+            trackedMeshes.push({ group: orbitGroup, orbit: orbitLine });
+        }
+
+        async function searchSpecificObject() {
+            const des = document.getElementById('obj-search').value.trim();
+            const status = document.getElementById('tracker-status');
+            if(!des) return;
+            document.getElementById('tracker-panel').style.display = 'block';
+            status.innerText = "Searching JPL SBDB... ⏳";
+            status.style.color = "#ffcc00";
+            
+            try {
+                const data = await fetchWithFallback(`${NASA_API_BASE}/sbdb.api?sstr=${encodeURIComponent(des)}`);
+                if(data.object) {
+                    clearTrackedObjects();
+                    let true_a = null, true_e = null;
+                    if (data.orbit && data.orbit.elements) {
+                        const getEl = (n) => { const el = data.orbit.elements.find(e => e.name === n); return el ? parseFloat(el.value) : null; };
+                        true_a = getEl('a'); true_e = getEl('e');
+                    }
+                    addTrackedObject(data.object.fullname, true, null, true_a, true_e);
+                    
+                    if (data.simulated) {
+                        status.innerText = `[SIMULATED] ${data.object.fullname}`;
+                        status.style.color = "#ffcc00";
+                    } else {
+                        status.innerText = `[LOCKED] ${data.object.fullname}`;
+                        status.style.color = "#00ffcc";
+                    }
+                } else {
+                    status.innerText = "Object not found.";
+                    status.style.color = "#ff4444";
+                }
+            } catch (e) { 
+                console.error(e);
+                status.innerText = "Error contacting API."; 
+                status.style.color = "#ff4444";
+            }
+        }
+
+        async function fetchForeignObject() {
+            const dist = document.getElementById('dist-select').value;
+            let limit = parseInt(document.getElementById('obj-limit').value) || 20;
+            if (limit > 500) limit = 500;
+            
+            const status = document.getElementById('tracker-status');
+            status.innerText = "Fetching CAD Data... ⏳";
+            status.style.color = "#ffcc00";
+            
+            try {
+                const today = new Date().toISOString().split('T')[0];
+                const targetUrl = `${NASA_API_BASE}/cad.api?dist-max=${dist}&date-min=${today}&limit=${limit}`;
+                const data = await fetchWithFallback(targetUrl);
+                
+                if (data.data && data.data.length > 0) {
+                    clearTrackedObjects();
+                    data.data.forEach(item => addTrackedObject(item[0], true, parseFloat(item[4])));
+                    
+                    if (data.simulated) {
+                        status.innerText = `Tracking ${data.data.length} simulated objects`;
+                        status.style.color = "#ffcc00";
+                    } else {
+                        status.innerText = `Tracking ${data.data.length} objects`;
+                        status.style.color = "#00ffcc";
+                    }
+                } else { 
+                    status.innerText = "None detected in range."; 
+                    status.style.color = "#aaa";
+                }
+            } catch (e) { 
+                console.error("CAD Tracker Error:", e);
+                status.innerText = "Error: API Blocked or Offline."; 
+                status.style.color = "#ff4444";
+            }
+        }
+
+        // --- Core Application Loop ---
+        function updatePlanets() {
+            if (isPlaying) {
+                const now = Date.now();
+                accumulatedTime += (now - lastTime) / 1000;
+                lastTime = now;
+            }
+            
+            planetMeshes.forEach((planetObj, index) => {
+                const p = planetConfigs[index];
+                const angle = accumulatedTime * p.v + index; 
+                planetObj.position.x = p.a * Math.cos(angle);
+                planetObj.position.z = p.a * Math.sin(angle);
+                planetObj.rotation.y += p.v * 2; // Axial rotation
+                
+                // Moon orbits
+                if (planetObj.userData.moonsGroup) {
+                    // Check distance to camera to show/hide moons (intuitive rendering)
+                    const distToCam = camera.position.distanceTo(planetObj.position);
+                    planetObj.userData.moonsGroup.visible = distToCam < (p.size * 30);
+                    
+                    if(planetObj.userData.moonsGroup.visible) {
+                        planetObj.userData.moonsGroup.children.forEach((moon, mIdx) => {
+                            const mData = p.moons[mIdx];
+                            const mAngle = accumulatedTime * mData.speed * 10 + mIdx;
+                            moon.position.x = mData.dist * Math.cos(mAngle);
+                            moon.position.z = mData.dist * Math.sin(mAngle);
+                        });
+                    }
+                }
+            });
+        }
+
+        window.onload = function() {
+            // Setup Scene & HD Renderer
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x020205);
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 3000);
+            
+            renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.2;
+            document.body.appendChild(renderer.domElement);
+            
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+
+            window.addEventListener('click', onMouseClick);
+            
+            // HD Starfield
+            const starGeo = new THREE.BufferGeometry();
+            const starPos = new Float32Array(20000 * 3);
+            const starCol = new Float32Array(20000 * 3);
+            for(let i = 0; i < 20000; i++) {
+                starPos[i*3] = (Math.random() - 0.5) * 2000;
+                starPos[i*3+1] = (Math.random() - 0.5) * 2000;
+                starPos[i*3+2] = (Math.random() - 0.5) * 2000;
+                const c = new THREE.Color().setHSL(Math.random(), 0.5, Math.random() * 0.8 + 0.2);
+                starCol[i*3] = c.r; starCol[i*3+1] = c.g; starCol[i*3+2] = c.b;
+            }
+            starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+            starGeo.setAttribute('color', new THREE.BufferAttribute(starCol, 3));
+            scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({ size: 0.8, vertexColors: true, transparent: true, opacity: 0.8 })));
+
+            // Advanced Lighting
+            scene.add(new THREE.AmbientLight(0x222233, 1.5));
+            const sunLight = new THREE.PointLight(0xffeedd, 3, 1500);
+            scene.add(sunLight);
+
+            // The Sun (Volumetric Glow)
+            const sunGroup = new THREE.Group();
+            sunGroup.add(new THREE.Mesh(new THREE.SphereGeometry(3, 64, 64), new THREE.MeshBasicMaterial({ color: 0xffddaa })));
+            sunGroup.add(new THREE.Mesh(new THREE.SphereGeometry(3.5, 32, 32), new THREE.MeshBasicMaterial({ color: 0xff8800, transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending })));
+            sunGroup.userData = { isTarget: true, name: "The Sun", type: "G-Type Main-Sequence Star", a: 0, v: 0, moons: [] };
+            interactableObjects.push(sunGroup);
+            scene.add(sunGroup);
+
+            // Generate HD Planets
+            planetConfigs.forEach(p => {
+                const planetGroup = new THREE.Group();
+                
+                // Procedural Texture & PBR Material
+                const tex = generatePlanetTexture(p.name, p.type, p.color);
+                const pMat = new THREE.MeshStandardMaterial({ map: tex, roughness: p.rough, metalness: p.metal });
+                const mesh = new THREE.Mesh(new THREE.SphereGeometry(p.size, 64, 64), pMat);
+                planetGroup.add(mesh);
+                
+                // Add Rings if applicable
+                if (p.rings) {
+                    const rGeo = new THREE.RingGeometry(p.rings.inner, p.rings.outer, 64);
+                    // Adjust UVs for ring mapping
+                    const pos = rGeo.attributes.position;
+                    const uvs = rGeo.attributes.uv;
+                    for (let i = 0; i < pos.count; i++) {
+                        let vec = new THREE.Vector3().fromBufferAttribute(pos, i);
+                        uvs.setXY(i, (vec.length() - p.rings.inner) / (p.rings.outer - p.rings.inner), 0.5);
+                    }
+                    const rMat = new THREE.MeshStandardMaterial({ 
+                        map: generateRingTexture(p.rings.color), side: THREE.DoubleSide, transparent: true, opacity: p.rings.opacity 
+                    });
+                    const ringMesh = new THREE.Mesh(rGeo, rMat);
+                    ringMesh.rotation.x = Math.PI / 2 + 0.1; // Slight tilt
+                    planetGroup.add(ringMesh);
+                }
+
+                // Add Moons Group
+                const moonsGroup = new THREE.Group();
+                p.moons.forEach(m => {
+                    const moonMesh = new THREE.Mesh(new THREE.SphereGeometry(m.size, 32, 32), new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.9 }));
+                    moonsGroup.add(moonMesh);
+                });
+                planetGroup.add(moonsGroup);
+                planetGroup.userData.moonsGroup = moonsGroup;
+
+                // Interactive Data
+                planetGroup.userData.isTarget = true;
+                planetGroup.userData.name = p.name;
+                planetGroup.userData.type = p.type;
+                planetGroup.userData.a = p.a / 13; // Approx real AU
+                planetGroup.userData.v = p.v;
+                planetGroup.userData.moons = p.moons;
+                planetGroup.userData.size = p.size;
+                
+                interactableObjects.push(planetGroup);
+                planetMeshes.push(planetGroup);
+                scene.add(planetGroup);
+
+                // Holographic Orbit Line
+                const b = p.a * Math.sqrt(1 - p.e * p.e);
+                const orbitGeo = new THREE.BufferGeometry().setFromPoints(new THREE.EllipseCurve(0, 0, p.a, b, 0, 2 * Math.PI, false, 0).getPoints(200));
+                const orbitLine = new THREE.Line(orbitGeo, new THREE.LineBasicMaterial({ color: p.color, transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending }));
+                orbitLine.rotation.x = Math.PI / 2;
+                scene.add(orbitLine);
+            });
+
+            camera.position.set(0, 40, 70);
+
+            // Handle Resize
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }, false);
+
+            function animate(time) { 
+                requestAnimationFrame(animate); 
+                TWEEN.update(time); // Update camera animations
+                updatePlanets(); 
+                
+                // If focused, keep OrbitControls target locked to the moving object
+                if (focusedTarget) {
+                    const targetPos = new THREE.Vector3();
+                    focusedTarget.getWorldPosition(targetPos);
+                    controls.target.copy(targetPos);
+                }
+                
+                controls.update(); 
+                renderer.render(scene, camera); 
+            }
+            animate();
+            updateDailyDatabase();
+        };
+    </script>
+</body>
+</html>
