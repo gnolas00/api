@@ -1,4 +1,14 @@
 export default async function handler(req, res) {
+    // 1. Immediately set permissive CORS headers
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+    // Handle preflight requests
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
+
     const { des, dist, limit } = req.query;
     
     // Determine which NASA endpoint to call
@@ -20,20 +30,29 @@ export default async function handler(req, res) {
     }
 
     try {
-        const response = await fetch(baseUrl + endpoint);
+        // 2. Add custom headers to bypass NASA's data center bot-blocking firewall
+        const response = await fetch(baseUrl + endpoint, {
+            headers: {
+                'User-Agent': 'Nolasco-Productions-App/1.0',
+                'Accept': 'application/json'
+            }
+        });
         
         if (!response.ok) {
-            return res.status(response.status).json({ error: "NASA API rejected the request." });
+            const errorText = await response.text();
+            return res.status(response.status).json({ 
+                error: "NASA API rejected the request.", 
+                details: errorText 
+            });
         }
         
         const data = await response.json();
-        
-        // Ensure CORS headers are set so your browser accepts the data
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        res.setHeader('Access-Control-Allow-Methods', 'GET');
-        
         return res.status(200).json(data);
+        
     } catch (error) {
-        return res.status(500).json({ error: "Failed to fetch from NASA JPL servers." });
+        return res.status(500).json({ 
+            error: "Failed to fetch from NASA JPL servers.",
+            message: error.toString() 
+        });
     }
 }
