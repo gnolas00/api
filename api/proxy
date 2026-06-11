@@ -1,21 +1,35 @@
-// This file would be placed in your Vercel project's /api folder
+// This file is placed in your Vercel project's /api folder
 export default async function handler(req, res) {
-    const { des, dist } = req.query;
+    const { des, dist, limit } = req.query;
     
     // Determine which NASA endpoint to call
-    let url = "https://ssd-api.jpl.nasa.gov/";
-    if (des) url += `sbdb.api?sstr=${encodeURIComponent(des)}`;
-    else if (dist) url += `cad.api?dist-max=${encodeURIComponent(dist)}`;
-    else return res.status(400).json({ error: "Missing parameters" });
+    let baseUrl = "https://ssd-api.jpl.nasa.gov/";
+    let endpoint = "";
+
+    if (des) {
+        endpoint = `sbdb.api?sstr=${encodeURIComponent(des)}`;
+    } else if (dist) {
+        const limitParam = limit ? `&limit=${encodeURIComponent(limit)}` : "&limit=5";
+        endpoint = `cad.api?dist-max=${encodeURIComponent(dist)}${limitParam}`;
+    } else {
+        return res.status(400).json({ error: "Missing parameters: provide 'des' or 'dist'" });
+    }
 
     try {
-        const response = await fetch(url);
+        const response = await fetch(baseUrl + endpoint);
+        
+        if (!response.ok) {
+            throw new Error(`NASA API responded with status: ${response.status}`);
+        }
+
         const data = await response.json();
         
         // Add CORS headers so your frontend can read the response
         res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
         res.status(200).json(data);
     } catch (error) {
-        res.status(500).json({ error: "Failed to fetch from NASA" });
+        console.error("Proxy Error:", error);
+        res.status(500).json({ error: "Failed to fetch from NASA", details: error.message });
     }
 }
