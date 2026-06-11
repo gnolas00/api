@@ -1535,11 +1535,7 @@
                 const angle = accumulatedTime * p.v + index; 
                 planetObj.position.x = p.a * Math.cos(angle);
                 planetObj.position.z = p.a * Math.sin(angle);
-                
-                // Planets only spin when time is moving
-                if (isPlaying) {
-                    planetObj.rotation.y += p.v * 2; 
-                }
+                planetObj.rotation.y += p.v * 2; 
                 
                 if (planetObj.userData.moonsGroup) {
                     const distToCam = camera.position.distanceTo(planetObj.position);
@@ -1556,20 +1552,8 @@
                 }
             });
 
-            // Space Station Update
+            // Space Station Update - Removed the manual flat-equator override
             if (satOrbitGroup && currentSatMesh) {
-                const timeFactor = Date.now() / 1000;
-                const periodSec = activeSatConfig.period * 60;
-                const phase = (timeFactor % periodSec) / periodSec;
-                const phaseAngle = phase * Math.PI * 2;
-                
-                const r = 1.12; 
-                currentSatMesh.position.set(r * Math.cos(phaseAngle), 0, r * Math.sin(phaseAngle));
-                currentSatMesh.lookAt(new THREE.Vector3(0,0,0));
-
-                const earthRotationOffset = (timeFactor % 86400) / 86400 * Math.PI * 2;
-                satOrbitGroup.rotation.y = -earthRotationOffset;
-
                 if (isCameraLockedToSat) {
                     const globalSatPos = new THREE.Vector3();
                     currentSatMesh.getWorldPosition(globalSatPos);
