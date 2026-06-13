@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Solar System Simulation - Nolasco Productions</title>
+    <title>3D Solar System Simulation - Enhanced Interactive</title>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
+        body { margin: 0; padding: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        
         /* Nolasco Productions Intro CSS */
-        html, body { background-color: #000000; margin: 0; padding: 0; width: 100%; height: 100%; }
-
         #nolasco-intro {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background-color: #000000;
@@ -62,13 +62,9 @@
             50% { transform: translateY(0); animation-timing-function: cubic-bezier(0, 0, 0.2, 1); }
         }
 
-        /* Standard App CSS */
-        body { margin: 0; padding: 0; overflow: hidden; background: #000; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; touch-action: manipulation; }
-        
-        #ui-container { position: absolute; top: 20px; right: 20px; z-index: 100; display: flex; flex-direction: column; align-items: flex-end; pointer-events: none; }
-        #ui-container > * { pointer-events: auto; }
-        
-        #sync-status { position: absolute; top: 20px; left: 20px; color: #ffcc00; font-size: 0.85rem; font-weight: bold; background: rgba(10,15,30,0.7); backdrop-filter: blur(10px); padding: 8px 15px; border-radius: 8px; border: 1px solid rgba(255,204,0,0.3); pointer-events: none; text-transform: uppercase; letter-spacing: 1px; z-index: 50; }
+        /* Glassmorphism UI */
+        #ui-container { position: absolute; top: 20px; right: 20px; z-index: 10; display: flex; flex-direction: column; align-items: flex-end; }
+        #sync-status { position: absolute; top: 20px; left: 20px; color: #00ffcc; font-size: 0.85rem; font-weight: bold; background: rgba(10,15,30,0.7); backdrop-filter: blur(10px); padding: 8px 15px; border-radius: 8px; border: 1px solid rgba(0,255,204,0.3); pointer-events: none; text-transform: uppercase; letter-spacing: 1px; z-index: 50; }
         
         .panel { background: rgba(15, 20, 25, 0.85); backdrop-filter: blur(12px); padding: 15px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 10px 30px rgba(0,0,0,0.8); color: #fff; }
         
@@ -80,28 +76,25 @@
         input[type="text"], input[type="number"], select, input[type="datetime-local"] { width: 100%; box-sizing: border-box; background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 8px; border-radius: 4px; margin-bottom: 10px; }
         input[type="datetime-local"] { color-scheme: dark; }
         
-        #suggestions { position: absolute; width: calc(100% - 30px); background: #111; border: 1px solid #444; border-top: none; max-height: 150px; overflow-y: auto; z-index: 20; display: none; border-radius: 0 0 6px 6px; }
+        #suggestions { position: absolute; width: 100%; background: #111; border: 1px solid #444; border-top: none; max-height: 150px; overflow-y: auto; z-index: 20; display: none; border-radius: 0 0 6px 6px; }
         .suggestion-item { padding: 8px; cursor: pointer; font-size: 0.8rem; border-bottom: 1px solid #333; }
         .suggestion-item:hover { background: rgba(0,255,204,0.3); }
         
-        h3 { margin-top: 5px; font-weight: 600; letter-spacing: 1px; color: #00ffcc; font-size: 0.75rem; text-transform: uppercase; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px; }
+        h3 { margin-top: 5px; font-weight: 600; letter-spacing: 1px; color: #00ffcc; font-size: 0.75rem; text-transform: uppercase; }
         label { font-size: 0.8rem; color: #bbb; display: block; margin-bottom: 5px; }
         #current-time-display { font-size: 0.7rem; color: #00ffcc; margin-bottom: 10px; font-family: monospace; }
         
         #tracker-panel { display: none; position: absolute; bottom: 20px; left: 20px; width: 250px; z-index: 10; }
         
         /* Target Info HUD */
-        #info-panel { position: absolute; top: 70px; left: 20px; width: 280px; z-index: 10; display: none; border-left: 3px solid #00ffcc; pointer-events: auto; }
-        #info-title { font-size: 1.2rem; font-weight: bold; color: #00ffcc; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 2px; display: flex; justify-content: space-between; align-items: center; }
+        #info-panel { position: absolute; top: 70px; left: 20px; width: 280px; z-index: 10; display: none; pointer-events: auto; border-left: 3px solid #00ffcc; }
+        #info-title { font-size: 1.2rem; font-weight: bold; color: #00ffcc; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 2px; display: flex; justify-content: space-between; align-items: center;}
         .close-btn { cursor: pointer; color: #fff; font-size: 1.2rem; line-height: 1; padding: 0 5px; border-radius: 4px; transition: 0.2s; }
         .close-btn:hover { color: #ff4444; background: rgba(255,0,0,0.1); }
         .info-stat { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 5px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 3px; }
         .info-label { color: #aaa; }
-        .info-val { font-weight: bold; font-family: monospace; color: #fff; }
+        .info-val { font-weight: bold; font-family: monospace; color: #fff;}
         #unfocus-hint { font-size: 0.7rem; color: #888; margin-top: 10px; font-style: italic; text-align: center; }
-        
-        .info-fact { margin-top: 12px; font-size: 0.8rem; color: #ffcc00; font-style: italic; border-top: 1px dashed rgba(255,255,255,0.2); padding-top: 8px; line-height: 1.4; }
-        .info-comp { margin-top: 8px; font-size: 0.85rem; color: #fff; background: rgba(0,255,204,0.1); padding: 8px; border-radius: 6px; border-left: 3px solid #00ffcc; line-height: 1.3;}
 
         /* Dialog Boxes */
         .dialog { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 360px; background: rgba(20, 25, 35, 0.95); backdrop-filter: blur(15px); border: 1px solid rgba(0, 255, 204, 0.4); border-radius: 12px; z-index: 200; padding: 20px; color: white; box-shadow: 0 20px 50px rgba(0,0,0,0.9); }
@@ -113,8 +106,10 @@
         .result-item:hover { background: rgba(0, 255, 204, 0.15); border-left: 3px solid #00ffcc; }
         .result-name { font-weight: bold; font-size: 0.9rem; }
         .result-desc { font-size: 0.75rem; color: #aaa; margin-top: 4px; }
-
-        /* Animation Keyframes */
+        
+        .live-pulse { color: #ff4444; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+        
         .sat-loader-container { text-align: center; padding: 20px; }
         .sat-anim-wrapper { position: relative; height: 120px; width: 120px; margin: 0 auto; overflow: hidden; border-radius: 50%; background: rgba(0,0,0,0.5); border: 1px solid #333;}
         .earth-icon-anim { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 3.5rem; }
@@ -125,19 +120,16 @@
             80% { opacity: 1; }
             100% { top: 60%; left: 60%; transform: scale(1.5) rotate(45deg); opacity: 0; }
         }
-
         @keyframes cometFly {
             0% { top: -20%; left: 120%; transform: scale(0.5) rotate(-45deg); opacity: 0; }
             20% { opacity: 1; }
             80% { opacity: 1; }
             100% { top: 120%; left: -20%; transform: scale(1.5) rotate(-45deg); opacity: 0; }
         }
-
-        .live-pulse { color: #ff4444; animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
     </style>
 </head>
 <body>
+    <!-- NOLASCO PRODUCTIONS INTRO SCREEN -->
     <div id="nolasco-intro">
         <div class="nolasco-wrapper">
             <div class="nolasco-title">NOLASCO</div>
@@ -152,26 +144,20 @@
 
     <div id="sync-status">● Paused</div>
     
-    <!-- Target HUD -->
     <div id="info-panel" class="panel">
         <div id="info-title"><span id="target-name">Object</span><span class="close-btn" onclick="unfocusTarget()" title="Close HUD & Reset View">✕</span></div>
         <div class="info-stat"><span class="info-label">Type:</span> <span id="info-type" class="info-val">-</span></div>
         <div class="info-stat"><span class="info-label">Speed:</span> <span id="info-vel" class="info-val">-</span></div>
         <div class="info-stat"><span class="info-label">Dist from Sun:</span> <span id="info-dist" class="info-val">-</span></div>
         <div class="info-stat"><span class="info-label">Moons:</span> <span id="info-moons" class="info-val">-</span></div>
-        
-        <div class="info-fact" id="info-fact" style="display:none;"></div>
-        <div class="info-comp" id="info-comp" style="display:none;"></div>
-        
         <div id="dynamic-info-actions" style="display:none; margin-top:15px;"></div>
-        
         <div id="unfocus-hint">Click the X to reset view</div>
     </div>
 
     <div id="ui-container">
         <div style="display: flex; gap: 10px; pointer-events: auto;">
             <button class="menu-btn" style="width: auto; padding: 10px 20px; background: rgba(200, 50, 50, 0.6); border-color: #ff4444;" onclick="returnToSolarOrbit()">RETURN TO SOLAR ORBIT</button>
-            <button class="menu-btn" style="width: auto; padding: 10px 20px;" onclick="toggleMenu('menu-main')">COMMAND MENU</button>
+            <button class="menu-btn" style="width: auto; padding: 10px 20px;" onclick="document.getElementById('menu-main').style.display = (document.getElementById('menu-main').style.display === 'block') ? 'none' : 'block'">COMMAND MENU</button>
         </div>
 
         <div id="menu-main" class="panel">
@@ -208,7 +194,7 @@
         <h3>CAD DATA TRACKER</h3>
         <label for="obj-limit">Max Objects (Limit 500):</label>
         <input type="number" id="obj-limit" min="1" max="500" value="5">
-        <label for="dist-select">Max Distance (AU):</label>
+        <label for="dist-select">Max Approach Distance:</label>
         <select id="dist-select">
             <option value="0.0025">~238k miles (1 Lunar Dist) - Moon's Orbit</option>
             <option value="0.01">~930k miles (0.01 AU) - Extremely Close</option>
@@ -224,6 +210,7 @@
         <p id="tracker-status" style="font-size:0.8rem; color:#aaa; margin-top:5px;"></p>
     </div>
 
+    <!-- Loading & Dialog Boxes -->
     <div id="neo-loading-dialog" class="dialog">
         <div class="dialog-header">
             <span>DEEP SPACE SCAN</span>
@@ -257,6 +244,7 @@
         <button class="menu-btn" style="background: rgba(200, 50, 50, 0.6); border-color:#ff4444; color:white; text-align:center; padding: 12px; font-size: 1rem;" onclick="runTrajectorySimulation()">SHOW TRAJECTORY MAP</button>
     </div>
 
+    <!-- Space Station Tracker Dialogs -->
     <div id="sat-dialog" class="dialog">
         <div class="dialog-header">
             <span id="sat-dialog-title">ORBITAL DATABASE</span>
@@ -305,7 +293,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
-
     <script>
         // --- Intro Sequence Trigger ---
         window.addEventListener('load', () => {
@@ -347,28 +334,34 @@
         window.previousSatLat = null;
 
         const satDatabase = [
-            { id: "iss", name: "International Space Station (ISS)", type: "Crewed Station", owner: "Multinational", orbitHeight: "261 miles", speed: "4.76 mi/s", inc: 51.64, period: 92.9, live: true, color: 0x00ffff, desc: "The International Space Station is a massive modular space station in low Earth orbit. It represents a multinational collaborative project involving NASA, Roscosmos, JAXA, ESA, and CSA." },
-            { id: "css", name: "Tiangong Space Station (CSS)", type: "Crewed Station", owner: "CNSA (China)", orbitHeight: "242 miles", speed: "4.77 mi/s", inc: 41.5, period: 92.2, live: false, color: 0xff0044, desc: "The Tiangong space station is a permanent modular space station operated by the China Manned Space Agency. Its name translates to 'Heavenly Palace'." },
-            { id: "hst", name: "Hubble Space Telescope", type: "Space Observatory", owner: "NASA/ESA", orbitHeight: "332 miles", speed: "4.72 mi/s", inc: 28.5, period: 95.4, live: false, color: 0xaaaaaa, desc: "The Hubble Space Telescope was launched into low Earth orbit in 1990. Equipped with a 2.4-meter mirror, its high-resolution imagery has revolutionized astrophysics and our understanding of the universe." }
+            { id: "iss", name: "International Space Station", owner: "Multinational", orbitHeight: "261 miles", speed: "4.76 mi/s", inc: 51.64, period: 92.9, live: true, color: 0x00ffff, desc: "The ISS is a massive modular space station in low Earth orbit." },
+            { id: "css", name: "Tiangong Space Station", owner: "CNSA (China)", orbitHeight: "242 miles", speed: "4.77 mi/s", inc: 41.5, period: 92.2, live: false, color: 0xff0044, desc: "The Tiangong space station is a permanent modular space station." },
+            { id: "hst", name: "Hubble Space Telescope", owner: "NASA/ESA", orbitHeight: "332 miles", speed: "4.72 mi/s", inc: 28.5, period: 95.4, live: false, color: 0xaaaaaa, desc: "Hubble's high-resolution imagery has revolutionized astrophysics." }
         ];
 
         let currentSatMesh = null;
         let satOrbitGroup = null; 
         let latestStationData = null;
         let activeSatConfig = null;
+        
+        // Trail & Scanner Flags
         let issTrailLine = null;
         let issTrailPoints = [];
+        let isTrailActive = false;
+        let scannerData = null; 
+        let scannerGroup = null;
+        let scannerArrows = [];
 
         // --- HD Planet Configurations ---
         const planetConfigs = [
-            { name: "Mercury", a: 6, e: 0.2, type: "Terrestrial", color: 0x999999, size: 0.38, v: 0.068, moons: [], rough: 0.9, comp: "Roughly the size of the Continental USA 🇺🇸" },
-            { name: "Venus", a: 9, e: 0.0, type: "Terrestrial", color: 0xe3bb76, size: 0.95, v: 0.037, moons: [], rough: 0.5, comp: "Nearly the exact same size as Earth 🌍" },
-            { name: "Earth", a: 13, e: 0.02, type: "Terrestrial", color: 0x2e72b9, size: 1.0, v: 0.021, rough: 0.6, moons: [{ name: "Luna", size: 0.25, dist: 1.8, speed: 0.1 }], fact: "Earth is the only place known to harbor life.", comp: "Our Pale Blue Dot 💧" },
-            { name: "Mars", a: 17, e: 0.09, type: "Terrestrial", color: 0xc1440e, size: 0.53, v: 0.014, rough: 0.8, moons: [{ name: "Phobos", size: 0.1, dist: 1.0, speed: 0.15 }, { name: "Deimos", size: 0.08, dist: 1.4, speed: 0.12 }], comp: "About half the size of Earth 🔴" },
-            { name: "Jupiter", a: 28, e: 0.05, type: "Gas Giant", color: 0xd6a57e, size: 3.0, v: 0.008, rough: 0.3, rings: { inner: 3.5, outer: 5.5, color: 0xaa9988 }, moons: [{ name: "Io", size: 0.2, dist: 4.0, speed: 0.08 }, { name: "Europa", size: 0.18, dist: 4.8, speed: 0.06 }, { name: "Ganymede", size: 0.25, dist: 5.8, speed: 0.04 }, { name: "Callisto", size: 0.22, dist: 7.0, speed: 0.03 }], comp: "Could fit over 1,300 Earths inside it 🔵" },
-            { name: "Saturn", a: 42, e: 0.05, type: "Gas Giant", color: 0xf4d03f, size: 2.5, v: 0.005, rough: 0.3, rings: { inner: 2.8, outer: 6.0, color: 0xddccaa }, moons: [{ name: "Titan", size: 0.25, dist: 8.0, speed: 0.05 }, { name: "Enceladus", size: 0.1, dist: 4.5, speed: 0.09 }], comp: "Could fit about 760 Earths inside it 🪐" },
-            { name: "Uranus", a: 56, e: 0.05, type: "Ice Giant", color: 0x9bd7d5, size: 1.8, v: 0.003, rough: 0.2, rings: { inner: 2.3, outer: 3.8, color: 0xffffff }, moons: [{ name: "Titania", size: 0.15, dist: 3.5, speed: 0.06 }], comp: "Four times wider than Earth 🧊" },
-            { name: "Neptune", a: 70, e: 0.01, type: "Ice Giant", color: 0x3e54e8, size: 1.7, v: 0.002, rough: 0.2, rings: { inner: 2.0, outer: 3.4, color: 0xffffff }, moons: [{ name: "Triton", size: 0.18, dist: 3.0, speed: 0.07 }], comp: "About four times the width of Earth 🌪️" }
+            { name: "Mercury", a: 6, e: 0.2, type: "terrestrial", color: 0x888888, size: 0.38, v: 0.068, moons: [], rough: 0.9 },
+            { name: "Venus", a: 9, e: 0.0, type: "terrestrial", color: 0xe3bb76, size: 0.95, v: 0.037, moons: [], rough: 0.4 },
+            { name: "Earth", a: 13, e: 0.02, type: "terrestrial", color: 0x2e72b9, size: 1.0, v: 0.021, rough: 0.6, moons: [{ name: "Luna", size: 0.27, dist: 1.5, speed: 0.1 }] },
+            { name: "Mars", a: 17, e: 0.09, type: "terrestrial", color: 0xc1440e, size: 0.53, v: 0.014, rough: 0.8, moons: [{ name: "Phobos", size: 0.08, dist: 0.8, speed: 0.15 }, { name: "Deimos", size: 0.05, dist: 1.2, speed: 0.12 }] },
+            { name: "Jupiter", a: 28, e: 0.05, type: "gas_giant", color: 0xd6a57e, size: 3.0, v: 0.008, rough: 0.3, rings: { inner: 3.5, outer: 4.5, color: 0xaa9988, opacity: 0.3 }, moons: [{ name: "Io", size: 0.2, dist: 3.8, speed: 0.08 }, { name: "Europa", size: 0.18, dist: 4.5, speed: 0.06 }] },
+            { name: "Saturn", a: 42, e: 0.05, type: "gas_giant", color: 0xf4d03f, size: 2.5, v: 0.005, rough: 0.3, rings: { inner: 3.0, outer: 6.5, color: 0xddccaa, opacity: 0.8 }, moons: [{ name: "Titan", size: 0.25, dist: 7.5, speed: 0.05 }] },
+            { name: "Uranus", a: 56, e: 0.05, type: "ice_giant", color: 0x9bd7d5, size: 1.8, v: 0.003, rough: 0.2, rings: { inner: 2.2, outer: 3.2, color: 0xffffff, opacity: 0.2 }, moons: [{ name: "Titania", size: 0.15, dist: 3.5, speed: 0.06 }] },
+            { name: "Neptune", a: 70, e: 0.01, type: "ice_giant", color: 0x3e54e8, size: 1.7, v: 0.002, rough: 0.2, moons: [{ name: "Triton", size: 0.18, dist: 3.0, speed: 0.07 }] }
         ];
 
         // --- High-Resolution CDN Textures & Generators ---
@@ -385,29 +378,6 @@
         const textureLoader = new THREE.TextureLoader();
         textureLoader.setCrossOrigin("Anonymous");
 
-        function generatePlanetTexture(name, type, baseColor) {
-            const canvas = document.createElement('canvas');
-            canvas.width = 512; canvas.height = 256;
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#' + baseColor.toString(16).padStart(6, '0');
-            ctx.fillRect(0, 0, 512, 256);
-            if (type.includes("Giant")) {
-                for (let y = 0; y < 256; y += Math.random() * 10 + 5) {
-                    ctx.fillStyle = `rgba(255,255,255,${Math.random() * 0.15})`;
-                    if (Math.random() > 0.5) ctx.fillStyle = `rgba(0,0,0,${Math.random() * 0.15})`;
-                    ctx.fillRect(0, y, 512, Math.random() * 15 + 2);
-                }
-            } else {
-                for (let i = 0; i < 1500; i++) {
-                    ctx.fillStyle = `rgba(0,0,0,${Math.random()*0.3})`;
-                    ctx.beginPath(); ctx.arc(Math.random() * 512, Math.random() * 256, Math.random() * 2 + 1, 0, Math.PI * 2); ctx.fill();
-                }
-            }
-            const texture = new THREE.CanvasTexture(canvas);
-            texture.anisotropy = 16;
-            return texture;
-        }
-
         function loadTextureWithFallback(name, type, colorHex, pMat) {
             if (textureUrls[name]) {
                 textureLoader.load(textureUrls[name], 
@@ -418,6 +388,54 @@
                 pMat.map = generatePlanetTexture(name, type, colorHex);
                 pMat.needsUpdate = true;
             }
+        }
+
+        function generatePlanetTexture(name, type, baseColor) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512; canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#' + baseColor.toString(16).padStart(6, '0');
+            ctx.fillRect(0, 0, 512, 256);
+
+            if (type.includes("giant")) {
+                for (let y = 0; y < 256; y += Math.random() * 10 + 5) {
+                    ctx.fillStyle = `rgba(255,255,255,${Math.random() * 0.15})`;
+                    if (Math.random() > 0.5) ctx.fillStyle = `rgba(0,0,0,${Math.random() * 0.15})`;
+                    ctx.fillRect(0, y, 512, Math.random() * 15 + 2);
+                }
+            } else {
+                for(let i=0; i<1000; i++) {
+                    ctx.fillStyle = (name==="Earth" && i<700) ? 'rgba(34, 139, 34, 0.6)' : `rgba(0,0,0,${Math.random()*0.2})`;
+                    ctx.beginPath(); ctx.arc(Math.random()*512, Math.random()*256, Math.random()*3+1, 0, Math.PI*2); ctx.fill();
+                }
+                if (name === "Earth") {
+                    for(let i=0; i<300; i++) {
+                        ctx.fillStyle = 'rgba(255,255,255,0.4)';
+                        ctx.beginPath(); ctx.arc(Math.random()*512, Math.random()*256, Math.random()*8+2, 0, Math.PI*2); ctx.fill();
+                    }
+                }
+            }
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.anisotropy = 16;
+            return texture;
+        }
+
+        function generateRingTexture(colorHex) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 256; canvas.height = 1;
+            const ctx = canvas.getContext('2d');
+            const colStr = '#' + colorHex.toString(16).padStart(6, '0');
+            
+            const grd = ctx.createLinearGradient(0, 0, 256, 0);
+            grd.addColorStop(0, 'rgba(0,0,0,0)');
+            grd.addColorStop(0.1, colStr);
+            grd.addColorStop(0.3, 'rgba(0,0,0,0.1)');
+            grd.addColorStop(0.5, colStr);
+            grd.addColorStop(0.8, colStr);
+            grd.addColorStop(1, 'rgba(0,0,0,0)');
+            
+            ctx.fillStyle = grd; ctx.fillRect(0, 0, 256, 1);
+            return new THREE.CanvasTexture(canvas);
         }
 
         function generateAdvancedRingTexture(planetName) {
@@ -483,6 +501,22 @@
             return new THREE.CanvasTexture(canvas);
         }
 
+        // --- NEW: Glow Texture for Data Stream Trail ---
+        function createGlowTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 64; canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+            const grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+            grad.addColorStop(0, 'rgba(255, 255, 255, 1)');
+            grad.addColorStop(0.2, 'rgba(255, 255, 255, 0.8)');
+            grad.addColorStop(0.5, 'rgba(0, 255, 204, 0.4)');
+            grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 64, 64);
+            return new THREE.CanvasTexture(canvas);
+        }
+        const glowTexCache = createGlowTexture();
+
         let infoSpriteMatCache = null;
         function getInfoSpriteMat() {
             if (infoSpriteMatCache) return infoSpriteMatCache;
@@ -513,9 +547,6 @@
             document.getElementById('results-dialog').style.display = 'none';
             document.getElementById('details-dialog').style.display = 'none';
             
-            document.getElementById('tracker-status').innerText = "";
-            document.getElementById('obj-search').value = "";
-            
             document.getElementById('sync-status').innerHTML = isPlaying ? "● Playing" : "● Paused";
             document.getElementById('sync-status').style.color = isPlaying ? "#00ffcc" : "#ffcc00";
 
@@ -523,20 +554,15 @@
                 planetMeshes[2].remove(satOrbitGroup);
                 satOrbitGroup = null;
             }
-            if (currentSatMesh && planetMeshes[2]) {
-                planetMeshes[2].remove(currentSatMesh);
+            if (currentSatMesh) {
                 interactableObjects = interactableObjects.filter(o => o !== currentSatMesh);
                 currentSatMesh = null;
             }
-            if (issTrailLine && planetMeshes[2]) {
-                planetMeshes[2].remove(issTrailLine);
-                if (issTrailLine.geometry) issTrailLine.geometry.dispose();
-                if (issTrailLine.material) issTrailLine.material.dispose();
-                issTrailLine = null;
-            }
             issTrailPoints = [];
+            issTrailLine = null;
+            isTrailActive = false;
+            scannerData = null;
             isCameraLockedToSat = false;
-            window.previousSatLat = null;
             if (typeof liveTrackingInterval !== 'undefined' && liveTrackingInterval) clearInterval(liveTrackingInterval);
 
             focusedTarget = null;
@@ -557,27 +583,48 @@
             mouse.y = -(clientY / window.innerHeight) * 2 + 1;
 
             raycaster.setFromCamera(mouse, camera);
-            const hits = interactableObjects.flatMap(obj => {
-                if(obj.children) return [obj, ...obj.children];
-                return obj;
-            });
-            const intersects = raycaster.intersectObjects(hits, true);
+            
+            // Allow the raycaster to deeply scan all objects perfectly
+            const intersects = raycaster.intersectObjects(interactableObjects, true);
+
+            // --- STATION VIEW LOCK ---
+            // If we are actively tracking a satellite, prevent the Earth from stealing focus
+            if (currentSatMesh) {
+                let clickedStation = false;
+                
+                // Scan the entire hit hierarchy to ensure we catch the click even if hitting a solar panel
+                for (let i = 0; i < intersects.length; i++) {
+                    let obj = intersects[i].object;
+                    while (obj) {
+                        if (obj.userData && obj.userData.isSatellite) {
+                            clickedStation = true;
+                            break;
+                        }
+                        obj = obj.parent;
+                    }
+                    if (clickedStation) break;
+                }
+
+                // Cleanly toggle the menu
+                if (clickedStation) {
+                    const satMenu = document.getElementById('sat-control-menu');
+                    satMenu.style.display = (satMenu.style.display === 'block') ? 'none' : 'block';
+                }
+                
+                return; // Exit early! Ignore all planet clicks while in station mode.
+            }
+            // -------------------------
 
             if (intersects.length > 0) {
                 let selectedObj = null;
 
                 for (let i = 0; i < intersects.length; i++) {
                     let obj = intersects[i].object;
-                    
-                    if (obj.parent && obj.parent.userData && obj.parent.userData.isSatellite) {
-                        const satMenu = document.getElementById('sat-control-menu');
-                        satMenu.style.display = (satMenu.style.display === 'block') ? 'none' : 'block';
-                        return;
+
+                    while (obj.parent && obj.parent.type === 'Group' && (!obj.userData || !obj.userData.isTarget)) {
+                        obj = obj.parent;
                     }
-
-                    while (obj && !obj.userData.isTarget && obj.parent) { obj = obj.parent; }
-
-                    if (obj && obj.userData && obj.userData.isTarget) {
+                    if (obj.userData && obj.userData.isTarget) {
                         if (obj.userData.name === "The Sun") {
                             if (!selectedObj) selectedObj = obj;
                         } else {
@@ -587,13 +634,14 @@
                     }
                 }
 
-                if (satOrbitGroup && selectedObj && selectedObj.userData.name !== activeSatConfig.name) return;
-
                 if (selectedObj) {
                     focusOnTarget(selectedObj);
                 } else {
                     unfocusTarget();
                 }
+            } else {
+                // Ensure clicking empty space also unfocuses your current target
+                unfocusTarget();
             }
         }
 
@@ -605,29 +653,12 @@
             document.getElementById('target-name').innerText = data.name || "Unknown";
             document.getElementById('info-type').innerText = data.type || "Planet";
             
-            if (data.speedStr) {
-                document.getElementById('info-vel').innerText = data.speedStr;
-            } else {
-                const speedMiS = data.v ? (data.v * 100 * 0.621371).toFixed(2) : null;
-                document.getElementById('info-vel').innerText = speedMiS ? speedMiS + " mi/s" : "Dynamic";
-            }
+            const speedMiS = data.v ? (data.v * 100 * 0.621371).toFixed(2) : null;
+            document.getElementById('info-vel').innerText = speedMiS ? speedMiS + " mi/s" : "Dynamic";
             
             const distMMiles = data.a ? (data.a * 92.96).toFixed(2) : null;
             document.getElementById('info-dist').innerText = distMMiles ? distMMiles + " M miles" : "-";
             document.getElementById('info-moons').innerText = data.moons ? data.moons.length : "0";
-
-            const factEl = document.getElementById('info-fact');
-            const compEl = document.getElementById('info-comp');
-            
-            if (data.fact) {
-                factEl.style.display = 'block';
-                factEl.innerText = `"${data.fact}"`;
-            } else { factEl.style.display = 'none'; }
-
-            if (data.comp) {
-                compEl.style.display = 'block';
-                compEl.innerHTML = `<span style="display:block; font-size:0.7rem; color:#aaa; margin-bottom:2px;">HUMAN SCALE:</span>${data.comp}`;
-            } else { compEl.style.display = 'none'; }
 
             const actionsDiv = document.getElementById('dynamic-info-actions');
             if (data.name === "Earth") {
@@ -640,7 +671,8 @@
             const targetPos = new THREE.Vector3();
             target.getWorldPosition(targetPos);
             
-            const offset = new THREE.Vector3(data.size * 4, data.size * 2, data.size * 4);
+            const size = data.size || 1;
+            const offset = new THREE.Vector3(size * 4, size * 2, size * 4);
             const idealPos = targetPos.clone().add(offset);
 
             new TWEEN.Tween(camera.position).to({ x: idealPos.x, y: idealPos.y, z: idealPos.z }, 1000).easing(TWEEN.Easing.Quadratic.Out).start();
@@ -686,13 +718,128 @@
         window.setSimulationTime = function() {
             const picked = new Date(document.getElementById('time-picker').value).getTime();
             accumulatedTime = (picked - Date.now()) / 1000;
-            updatePlanets();
         }
 
         window.resetToRealTime = function() {
             accumulatedTime = 0;
             document.getElementById('sync-status').innerText = "● Real-time Mode";
         }
+
+        // --- Earth Trajectory Scanner ---
+        window.searchEarthApproaches = async function() {
+            const dialog = document.getElementById('results-dialog');
+            const list = document.getElementById('results-list');
+            dialog.style.display = 'block';
+            list.innerHTML = "<p style='color:#00ffcc;'>Connecting to JPL Close Approach Database... ⏳</p>";
+            try {
+                const today = new Date().toISOString().split('T')[0];
+                let data = await fetchWithFallback(`${NASA_API_BASE}/cad.api?dist-max=0.05&limit=30&sort=dist&date-min=${today}`);
+                
+                let html = "";
+                if (data.data && data.data.length > 0) {
+                    data.data.forEach(obj => {
+                        const name = obj[0]; const date = obj[3]; const distAU = parseFloat(obj[4]); const vel = parseFloat(obj[7]);
+                        const distM = (distAU * 92.96).toFixed(2);
+                        const h_mag = obj[10] ? parseFloat(obj[10]) : (Math.random() * 5 + 18);
+                        const diameterKm = 1329 * Math.pow(10, -h_mag / 5) / Math.sqrt(0.15); 
+                        const safeObj = { name: name, date: date, distAU: distAU, distM: distM, vel: vel, diameterKm: diameterKm };
+                        const safeData = JSON.stringify(safeObj).replace(/"/g, '&quot;').replace(/'/g, "\\'");
+                        html += `<div class="result-item" onclick="showTrajectoryDetails('${safeData}')"><div class="result-name">${name}</div><div class="result-desc">Approach: ${date} | Dist: ${distM}M miles</div></div>`;
+                    });
+                } else { html = "<p style='color:#aaa;'>No immediate Earth threats detected.</p>"; }
+                list.innerHTML = html;
+            } catch(e) { list.innerHTML = "<p style='color:#ff4444;'>Failed to communicate with orbital database.</p>"; }
+        };
+
+        window.showTrajectoryDetails = function(dataStr) {
+            const data = JSON.parse(dataStr);
+            currentMeteorSelection = data;
+            document.getElementById('details-dialog').style.display = 'block';
+            document.getElementById('obj-title').innerText = data.name;
+            const speed = data.vel ? (data.vel * 0.621371).toFixed(2) : "Unknown";
+            const sizeDesc = data.diameterKm < 1 ? (data.diameterKm * 3280.84).toFixed(0) + " ft" : (data.diameterKm * 0.621371).toFixed(2) + " miles";
+            let comp = "A small celestial object";
+            if (data.diameterKm < 0.015) comp = "A yellow school bus 🚌";
+            else if (data.diameterKm < 0.12) comp = "The Statue of Liberty 🗽";
+            else if (data.diameterKm < 0.35) comp = "The Eiffel Tower 🗼";
+            else comp = "A large mountain ⛰️";
+            
+            document.getElementById('obj-info').innerHTML = `
+                <div class="info-stat"><span class="info-label">Approach Date:</span> <span class="info-val">${data.date}</span></div>
+                <div class="info-stat"><span class="info-label">Miss Distance:</span> <span class="info-val">${data.distM}M miles</span></div>
+                <div class="info-stat"><span class="info-label">Velocity:</span> <span class="info-val">${speed} mi/s</span></div>
+                <div class="info-stat"><span class="info-label">Est. Diameter:</span> <span class="info-val">${sizeDesc}</span></div>
+                <div style="margin-top: 15px; padding: 12px; background: rgba(0, 255, 204, 0.1); border-radius: 8px; border-left: 3px solid #00ffcc;">
+                    <span style="display:block; font-size:0.75rem; color:#aaa; margin-bottom:4px; font-weight:bold; letter-spacing:1px;">HUMAN SCALE PERSPECTIVE</span>
+                    <span style="font-size:0.95rem; color:#fff;">${comp}</span>
+                </div>
+            `;
+        };
+
+        window.runTrajectorySimulation = function() {
+            if (!currentMeteorSelection) return;
+            document.getElementById('details-dialog').style.display = 'none';
+            document.getElementById('results-dialog').style.display = 'none';
+            document.getElementById('menu-main').style.display = 'none';
+            unfocusTarget();
+
+            isPlaying = false;
+            document.getElementById('play-pause-btn').innerText = "PLAY MOVEMENT";
+            document.getElementById('sync-status').innerText = "● SYSTEM OVERRIDE";
+            document.getElementById('sync-status').style.color = "#ff4444";
+            cameraContext = 'solar_system'; 
+
+            const earthMesh = planetMeshes[2]; 
+            const spawnDistance = 80;
+            const angle = Math.random() * Math.PI * 2;
+            const spawnPos = new THREE.Vector3(Math.cos(angle) * spawnDistance, (Math.random() - 0.5) * 30, Math.sin(angle) * spawnDistance);
+
+            const meteorGroup = new THREE.Group();
+            meteorGroup.position.copy(spawnPos);
+
+            const geo = createHDAsteroidGeometry(0.8);
+            const mat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.9, emissive: 0xff3300, emissiveIntensity: 0.5, flatShading: true });
+            const rock = new THREE.Mesh(geo, mat);
+            meteorGroup.add(rock);
+
+            const tailGroup = new THREE.Group();
+            for(let i=1; i<=15; i++) {
+                const tGeo = new THREE.IcosahedronGeometry(0.8 - (i*0.04), 1);
+                const tMat = new THREE.MeshBasicMaterial({ color: 0xffaa00, transparent: true, opacity: 1 - (i/15), blending: THREE.AdditiveBlending });
+                const tMesh = new THREE.Mesh(tGeo, tMat);
+                tMesh.position.set(0, 0, i * 0.8); 
+                tailGroup.add(tMesh);
+            }
+            meteorGroup.add(tailGroup);
+
+            const lineGeo = new THREE.BufferGeometry().setFromPoints([spawnPos, earthMesh.position]);
+            const orbitLine = new THREE.Line(lineGeo, new THREE.LineBasicMaterial({ color: 0xff0000, transparent: true, opacity: 0.6 }));
+
+            scene.add(meteorGroup);
+            scene.add(orbitLine);
+            
+            let comp = "A small celestial object";
+            if (currentMeteorSelection.diameterKm < 0.015) comp = "A yellow school bus 🚌";
+            meteorGroup.userData = { isTarget: true, name: currentMeteorSelection.name, type: "DANGER: INBOUND", a: currentMeteorSelection.distAU, v: currentMeteorSelection.vel, size: 0.8, comp: comp };
+            interactableObjects.push(meteorGroup);
+
+            const travelTime = 8000;
+            new TWEEN.Tween(meteorGroup.position).to({ x: earthMesh.position.x, y: earthMesh.position.y, z: earthMesh.position.z }, travelTime)
+                .easing(TWEEN.Easing.Quadratic.In)
+                .onUpdate(() => { if (meteorGroup) meteorGroup.lookAt(earthMesh.position); if (rock) { rock.rotation.x += 0.1; rock.rotation.z += 0.1; } })
+                .onComplete(() => {
+                    const flash = new THREE.PointLight(0xffdd00, 15, 100);
+                    flash.position.copy(earthMesh.position);
+                    scene.add(flash);
+                    setTimeout(() => scene.remove(flash), 200);
+                    scene.remove(meteorGroup); scene.remove(orbitLine);
+                    document.getElementById('sync-status').innerText = "● Paused"; document.getElementById('sync-status').style.color = "#00ffcc";
+                }).start();
+
+            const camOffset = new THREE.Vector3(15, 10, 15);
+            new TWEEN.Tween(camera.position).to({ x: earthMesh.position.x + camOffset.x, y: earthMesh.position.y + camOffset.y, z: earthMesh.position.z + camOffset.z }, travelTime).easing(TWEEN.Easing.Cubic.InOut).start();
+            new TWEEN.Tween(controls.target).to({ x: earthMesh.position.x, y: earthMesh.position.y, z: earthMesh.position.z }, travelTime).easing(TWEEN.Easing.Cubic.InOut).start();
+        };
 
         // --- Robust Data Fetching with Proxy Pipeline ---
         async function fetchWithFallback(targetUrl) {
@@ -860,22 +1007,9 @@
             asteroidObj.add(sprite);
 
             const trueDistAu = a / 13;
-            const tempK = 278 / Math.sqrt(trueDistAu || 1);
-            const tempF = Math.round((tempK - 273.15) * 1.8 + 32);
-            
-            const materials = ['metallic iron-nickel', 'carbonaceous chondrite', 'silicate rock', 'stony-iron mixture', 'icy-dust composite'];
-            const matType = materials[Math.floor(Math.random() * materials.length)];
-            
-            let condition = "drifting";
-            if (tempF > 200) condition = "scorching";
-            if (tempF > 800) condition = "burning";
-            if (tempF < -100) condition = "freezing";
-            if (tempF < -300) condition = "hyper-frozen";
-
             const speedMiS = ((Math.random() * 10 + 10) / Math.sqrt(trueDistAu || 1)).toFixed(2);
-            const funFact = `${name} is currently situated roughly ${(trueDistAu * 92.96).toFixed(1)} million miles from the Sun. It is a ${condition}, ${matType} body enduring surface temperatures of approximately ${tempF}°F!`;
             
-            asteroidObj.userData = { isTarget: true, name: name, type: "Asteroid / NEO", a: trueDistAu, v: null, size: 0.4, speedStr: speedMiS + " mi/s", fact: funFact };
+            asteroidObj.userData = { isTarget: true, name: name, type: "Asteroid / NEO", a: trueDistAu, v: null, size: 0.4, speedStr: speedMiS + " mi/s" };
             interactableObjects.push(asteroidObj);
             
             let orbitLine = null;
@@ -950,7 +1084,8 @@
             try {
                 await new Promise(r => setTimeout(r, 800)); 
                 const today = new Date().toISOString().split('T')[0];
-                const data = await fetchWithFallback(`${NASA_API_BASE}/cad.api?dist-max=${dist}&date-min=${today}&limit=${limit}`);
+                const targetUrl = `${NASA_API_BASE}/cad.api?dist-max=${dist}&date-min=${today}&limit=${limit}`;
+                const data = await fetchWithFallback(targetUrl);
                 
                 if (data.data && data.data.length > 0) {
                     loadingText.innerText = data.simulated ? "SCAN COMPLETE (OFFLINE CACHE)" : "SCAN COMPLETE (LIVE DATA)";
@@ -984,145 +1119,47 @@
                     setTimeout(() => { loadingDialog.style.display = 'none'; }, 2000);
                 } else { throw new Error("Invalid payload"); }
             } catch (e) { 
-                console.error(e);
+                console.error("CAD Tracker Error:", e);
                 loadingText.innerText = "ERROR: CONNECTION FAILED"; 
                 loadingText.style.color = "#ff4444";
                 setTimeout(() => { loadingDialog.style.display = 'none'; }, 2000);
             }
         };
 
-        window.searchEarthApproaches = async function() {
-            const dialog = document.getElementById('results-dialog');
-            const list = document.getElementById('results-list');
-            dialog.style.display = 'block';
-            list.innerHTML = "<p style='color:#00ffcc;'>Connecting to JPL Close Approach Database... ⏳</p>";
-            try {
-                const today = new Date().toISOString().split('T')[0];
-                let data = await fetchWithFallback(`${NASA_API_BASE}/cad.api?dist-max=0.05&limit=30&sort=dist&date-min=${today}`);
-                
-                let html = "";
-                if (data.data && data.data.length > 0) {
-                    data.data.forEach(obj => {
-                        const name = obj[0]; const date = obj[3]; const distAU = parseFloat(obj[4]); const vel = parseFloat(obj[7]);
-                        const distM = (distAU * 92.96).toFixed(2);
-                        const h_mag = obj[10] ? parseFloat(obj[10]) : (Math.random() * 5 + 18);
-                        const diameterKm = 1329 * Math.pow(10, -h_mag / 5) / Math.sqrt(0.15); 
-                        const safeObj = { name: name, date: date, distAU: distAU, distM: distM, vel: vel, diameterKm: diameterKm };
-                        const safeData = JSON.stringify(safeObj).replace(/"/g, '&quot;').replace(/'/g, "\\'");
-                        html += `<div class="result-item" onclick="showTrajectoryDetails('${safeData}')"><div class="result-name">${name}</div><div class="result-desc">Approach: ${date} | Dist: ${distM}M miles</div></div>`;
-                    });
-                } else { html = "<p style='color:#aaa;'>No immediate Earth threats detected.</p>"; }
-                list.innerHTML = html;
-            } catch(e) { list.innerHTML = "<p style='color:#ff4444;'>Failed to communicate with orbital database.</p>"; }
-        };
-
-        window.showTrajectoryDetails = function(dataStr) {
-            const data = JSON.parse(dataStr);
-            currentMeteorSelection = data;
-            document.getElementById('details-dialog').style.display = 'block';
-            document.getElementById('obj-title').innerText = data.name;
-            const speed = data.vel ? (data.vel * 0.621371).toFixed(2) : "Unknown";
-            const sizeDesc = data.diameterKm < 1 ? (data.diameterKm * 3280.84).toFixed(0) + " ft" : (data.diameterKm * 0.621371).toFixed(2) + " miles";
-            let comp = "A small celestial object";
-            if (data.diameterKm < 0.015) comp = "A yellow school bus 🚌";
-            else if (data.diameterKm < 0.12) comp = "The Statue of Liberty 🗽";
-            else if (data.diameterKm < 0.35) comp = "The Eiffel Tower 🗼";
-            else comp = "A large mountain ⛰️";
-            
-            document.getElementById('obj-info').innerHTML = `
-                <div class="info-stat"><span class="info-label">Approach Date:</span> <span class="info-val">${data.date}</span></div>
-                <div class="info-stat"><span class="info-label">Miss Distance:</span> <span class="info-val">${data.distM}M miles</span></div>
-                <div class="info-stat"><span class="info-label">Velocity:</span> <span class="info-val">${speed} mi/s</span></div>
-                <div class="info-stat"><span class="info-label">Est. Diameter:</span> <span class="info-val">${sizeDesc}</span></div>
-                <div style="margin-top: 15px; padding: 12px; background: rgba(0, 255, 204, 0.1); border-radius: 8px; border-left: 3px solid #00ffcc;">
-                    <span style="display:block; font-size:0.75rem; color:#aaa; margin-bottom:4px; font-weight:bold; letter-spacing:1px;">HUMAN SCALE PERSPECTIVE</span>
-                    <span style="font-size:0.95rem; color:#fff;">${comp}</span>
-                </div>
-            `;
-        };
-
-        window.runTrajectorySimulation = function() {
-            if (!currentMeteorSelection) return;
-            document.getElementById('details-dialog').style.display = 'none';
-            document.getElementById('results-dialog').style.display = 'none';
-            document.getElementById('menu-main').style.display = 'none';
-            unfocusTarget();
-
-            isPlaying = false;
-            document.getElementById('play-pause-btn').innerText = "PLAY MOVEMENT";
-            document.getElementById('sync-status').innerText = "● SYSTEM OVERRIDE";
-            document.getElementById('sync-status').style.color = "#ff4444";
-            cameraContext = 'solar_system'; 
-
-            const earthMesh = planetMeshes[2]; 
-            const spawnDistance = 80;
-            const angle = Math.random() * Math.PI * 2;
-            const spawnPos = new THREE.Vector3(Math.cos(angle) * spawnDistance, (Math.random() - 0.5) * 30, Math.sin(angle) * spawnDistance);
-
-            const meteorGroup = new THREE.Group();
-            meteorGroup.position.copy(spawnPos);
-
-            const geo = createHDAsteroidGeometry(0.8);
-            const mat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.9, emissive: 0xff3300, emissiveIntensity: 0.5, flatShading: true });
-            const rock = new THREE.Mesh(geo, mat);
-            meteorGroup.add(rock);
-
-            const tailGroup = new THREE.Group();
-            for(let i=1; i<=15; i++) {
-                const tGeo = new THREE.IcosahedronGeometry(0.8 - (i*0.04), 1);
-                const tMat = new THREE.MeshBasicMaterial({ color: 0xffaa00, transparent: true, opacity: 1 - (i/15), blending: THREE.AdditiveBlending });
-                const tMesh = new THREE.Mesh(tGeo, tMat);
-                tMesh.position.set(0, 0, i * 0.8); 
-                tailGroup.add(tMesh);
-            }
-            meteorGroup.add(tailGroup);
-
-            const lineGeo = new THREE.BufferGeometry().setFromPoints([spawnPos, earthMesh.position]);
-            const orbitLine = new THREE.Line(lineGeo, new THREE.LineBasicMaterial({ color: 0xff0000, transparent: true, opacity: 0.6 }));
-
-            scene.add(meteorGroup);
-            scene.add(orbitLine);
-            
-            let comp = "A small celestial object";
-            if (currentMeteorSelection.diameterKm < 0.015) comp = "A yellow school bus 🚌";
-            meteorGroup.userData = { isTarget: true, name: currentMeteorSelection.name, type: "DANGER: INBOUND", a: currentMeteorSelection.distAU, v: currentMeteorSelection.vel, size: 0.8, comp: comp };
-            interactableObjects.push(meteorGroup);
-
-            const travelTime = 8000;
-            new TWEEN.Tween(meteorGroup.position).to({ x: earthMesh.position.x, y: earthMesh.position.y, z: earthMesh.position.z }, travelTime)
-                .easing(TWEEN.Easing.Quadratic.In)
-                .onUpdate(() => { if (meteorGroup) meteorGroup.lookAt(earthMesh.position); if (rock) { rock.rotation.x += 0.1; rock.rotation.z += 0.1; } })
-                .onComplete(() => {
-                    const flash = new THREE.PointLight(0xffdd00, 15, 100);
-                    flash.position.copy(earthMesh.position);
-                    scene.add(flash);
-                    setTimeout(() => scene.remove(flash), 200);
-                    scene.remove(meteorGroup); scene.remove(orbitLine);
-                    document.getElementById('sync-status').innerText = "● Paused"; document.getElementById('sync-status').style.color = "#00ffcc";
-                }).start();
-
-            const camOffset = new THREE.Vector3(15, 10, 15);
-            new TWEEN.Tween(camera.position).to({ x: earthMesh.position.x + camOffset.x, y: earthMesh.position.y + camOffset.y, z: earthMesh.position.z + camOffset.z }, travelTime).easing(TWEEN.Easing.Cubic.InOut).start();
-            new TWEEN.Tween(controls.target).to({ x: earthMesh.position.x, y: earthMesh.position.y, z: earthMesh.position.z }, travelTime).easing(TWEEN.Easing.Cubic.InOut).start();
-        };
-
         // --- Space Station Methods ---
+        function createSatMesh(type) {
+            const group = new THREE.Group();
+            if (type === 'hst') {
+                const hull = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.08, 16), new THREE.MeshStandardMaterial({color: 0xaaaaaa, metalness: 0.9}));
+                hull.rotation.z = Math.PI / 2; group.add(hull);
+                const lid = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.02, 16), new THREE.MeshStandardMaterial({color: 0x222222}));
+                lid.position.x = 0.04; lid.rotation.z = Math.PI / 2; group.add(lid);
+                const pMat = new THREE.MeshStandardMaterial({color: 0x113388, metalness: 0.5});
+                const p1 = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.005, 0.06), pMat); p1.position.set(0, 0.02, 0); group.add(p1);
+                const p2 = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.005, 0.06), pMat); p2.position.set(0, -0.02, 0); group.add(p2);
+            } else if (type === 'css') {
+                const hull = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.08, 16), new THREE.MeshStandardMaterial({color: 0xdddddd, metalness: 0.8}));
+                hull.rotation.z = Math.PI / 2; group.add(hull);
+                const pMat = new THREE.MeshStandardMaterial({color: 0x113388});
+                const p1 = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.01, 0.12), pMat); p1.position.set(0.02, 0.02, 0); group.add(p1);
+                const p2 = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.01, 0.12), pMat); p2.position.set(-0.02, 0.02, 0); group.add(p2);
+            } else { 
+                const hull = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.1, 16), new THREE.MeshStandardMaterial({color: 0xdddddd, metalness: 0.8}));
+                hull.rotation.z = Math.PI / 2; group.add(hull);
+                const pMat = new THREE.MeshStandardMaterial({color: 0x113388, metalness: 0.5, roughness: 0.2});
+                const p1 = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.01, 0.15), pMat); p1.position.set(0.04, 0.02, 0); group.add(p1);
+                const p2 = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.01, 0.15), pMat); p2.position.set(-0.04, 0.02, 0); group.add(p2);
+            }
+            return group;
+        }
+
         window.openSatTracker = function() {
             if(isPlaying) togglePlay(); 
             document.getElementById('sat-dialog').style.display = 'block';
-            document.getElementById('sat-loading-view').style.display = 'block';
+            document.getElementById('sat-list-view').style.display = 'block';
             document.getElementById('sat-detail-view').style.display = 'none';
-            document.getElementById('sat-list-view').style.display = 'none';
-            setTimeout(() => { showSatList(); }, 600);
-        };
-
-        window.showSatList = function() {
-            document.getElementById('sat-dialog-title').innerText = "ACTIVE STATIONS";
-            document.getElementById('sat-loading-view').style.display = 'none';
-            document.getElementById('sat-detail-view').style.display = 'none';
-            const list = document.getElementById('sat-list-view');
-            list.style.display = 'block';
             
+            const list = document.getElementById('sat-list-view');
             let html = "";
             satDatabase.forEach(sat => {
                 html += `
@@ -1171,19 +1208,6 @@
             fetchStationData(activeSatConfig.id, true);
         };
 
-        window.closeSatTracker = function() {
-            document.getElementById('sat-dialog').style.display = 'none';
-            if (satOrbitGroup && planetMeshes[2]) {
-                planetMeshes[2].remove(satOrbitGroup);
-                satOrbitGroup = null;
-            }
-            if (currentSatMesh) {
-                interactableObjects = interactableObjects.filter(o => o.userData && !o.userData.isSatellite);
-                currentSatMesh = null;
-            }
-            unfocusTarget();
-        };
-
         async function fetchLiveISSData(isBackground = false) {
             try {
                 const res = await fetch("https://api.wheretheiss.at/v1/satellites/25544");
@@ -1197,7 +1221,7 @@
                     else locString = "Over open ocean";
                 } catch(e) { console.warn("Geocoding failed"); }
 
-                latestStationData = { ...data, locationText: locString };
+                latestStationData = { ...data, locationText: locString, exactVector: null };
                 satTelemetryCache.data = latestStationData;
                 satTelemetryCache.timestamp = Date.now();
                 
@@ -1279,55 +1303,29 @@
         window.findSatOrbit = function() {
             document.getElementById('sat-dialog').style.display = 'none';
             unfocusTarget();
-
             document.getElementById('menu-main').style.display = 'none';
-            document.getElementById('tracker-panel').style.display = 'none';
-            document.getElementById('results-dialog').style.display = 'none';
-            document.getElementById('details-dialog').style.display = 'none';
             document.getElementById('sat-control-menu').style.display = 'block';
 
             if (satOrbitGroup && planetMeshes[2]) {
                 planetMeshes[2].remove(satOrbitGroup);
-                satOrbitGroup = null;
-            }
-            if (currentSatMesh && planetMeshes[2]) {
-                planetMeshes[2].remove(currentSatMesh);
-                currentSatMesh = null;
-            }
-            if (issTrailLine && planetMeshes[2]) {
-                planetMeshes[2].remove(issTrailLine);
-                if (issTrailLine.geometry) issTrailLine.geometry.dispose();
-                if (issTrailLine.material) issTrailLine.material.dispose();
-                issTrailLine = null;
             }
             issTrailPoints = [];
-            window.previousSatLat = null;
-
-            if(isPlaying) togglePlay(); 
+            isTrailActive = false;
+            scannerData = null;
 
             document.getElementById('sync-status').innerHTML = `<span class="live-pulse">● TRACKING ${activeSatConfig.id.toUpperCase()}</span>`;
             document.getElementById('sync-status').style.color = "#ff4444";
 
             satOrbitGroup = new THREE.Group();
-            
-            const r = 1.12; 
-            const curve = new THREE.EllipseCurve(0, 0, r, r, 0, 2 * Math.PI, false, 0);
-            const pts3d = curve.getPoints(128).map(p => new THREE.Vector3(p.x, 0, p.y));
-            const ringGeo = new THREE.BufferGeometry().setFromPoints(pts3d);
-            
-            const ringMat = new THREE.LineBasicMaterial({ color: activeSatConfig.color, transparent: true, opacity: activeSatConfig.live ? 0.1 : 0.4, linewidth: 2 });
-            const orbitRing = new THREE.Line(ringGeo, ringMat);
-            
-            satOrbitGroup.add(orbitRing);
             satOrbitGroup.rotation.order = 'YXZ';
             satOrbitGroup.rotation.x = activeSatConfig.inc * (Math.PI / 180);
-            
             planetMeshes[2].add(satOrbitGroup); 
             
             currentSatMesh = createSatMesh(activeSatConfig.id);
             currentSatMesh.userData = { isSatellite: true, name: activeSatConfig.name };
+            
+            satOrbitGroup.add(currentSatMesh); 
             interactableObjects.push(currentSatMesh);
-            planetMeshes[2].add(currentSatMesh); 
             
             isCameraLockedToSat = true;
 
@@ -1343,101 +1341,65 @@
                         currentSatMesh.getWorldPosition(localPos);
                         const camDir = localPos.clone().sub(earthPos).normalize();
                         const idealCamPos = earthPos.clone().add(camDir.multiplyScalar(camDist));
-                        new TWEEN.Tween(camera.position).to({ x: idealCamPos.x, y: idealCamPos.y, z: idealCamPos.z }, 1500).easing(TWEEN.Easing.Cubic.InOut).start();
+                        
+                        new TWEEN.Tween(camera.position).to({ x: idealCamPos.x, y: idealCamPos.y, z: idealCamPos.z }, 1500).easing(TWEEN.Easing.Cubic.InOut)
+                            .onComplete(() => {
+                                launchOrbitScanner();
+                            })
+                            .start();
                     }
                 }).start();
 
             new TWEEN.Tween(controls.target).to({ x: earthPos.x, y: earthPos.y, z: earthPos.z }, 2500).easing(TWEEN.Easing.Cubic.InOut).start();
-            
-            if (typeof liveTrackingInterval !== 'undefined' && liveTrackingInterval) clearInterval(liveTrackingInterval);
-            
-            liveTrackingInterval = setInterval(() => {
-                if(activeSatConfig.live) {
-                    fetchLiveISSData(true).then(() => updateISSMeshPosition(true));
-                } else {
-                    generateSimulatedStationData(true);
-                    updateISSMeshPosition(true);
-                    fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latestStationData.latitude}&longitude=${latestStationData.longitude}&localityLanguage=en`)
-                        .then(res => res.json())
-                        .then(geoData => {
-                            if (geoData.principalSubdivision && geoData.countryName) latestStationData.locationText = `${geoData.principalSubdivision}, ${geoData.countryName}`;
-                            else if (geoData.locality) latestStationData.locationText = geoData.locality;
-                            else latestStationData.locationText = "Over open ocean";
-                            if (document.getElementById('sat-info-dialog').style.display === 'block') showSatInfo();
-                        }).catch(e => { });
-                }
-            }, 5000);
-            
-            updateISSMeshPosition();
         };
 
-        function alignRingToSatellite(satPos, incRad, lat) {
-            if (!satOrbitGroup) return;
-            const r = satPos.length();
-            const y = satPos.y;
+        function launchOrbitScanner() {
+            scannerGroup = new THREE.Group();
+            scannerArrows = []; // We reuse this array for the reticle
             
-            let sinM = y / (r * Math.sin(incRad));
-            sinM = Math.max(-1, Math.min(1, sinM));
+            const reticle = new THREE.Group();
             
-            const M1 = Math.asin(sinM);
-            const M2 = Math.PI - M1;
+            // 1. Spinning Core
+            const coreGeo = new THREE.OctahedronGeometry(0.02, 0);
+            const coreMat = new THREE.MeshBasicMaterial({ color: activeSatConfig.color, wireframe: true, transparent: true, opacity: 0.9 });
+            const core = new THREE.Mesh(coreGeo, coreMat);
             
-            let isAscending = true;
-            if (typeof window.previousSatLat !== 'undefined' && window.previousSatLat !== null) {
-                isAscending = lat >= window.previousSatLat;
-            }
-            window.previousSatLat = lat;
+            // 2. Inner HUD Ring (Broken)
+            const ring1Geo = new THREE.RingGeometry(0.04, 0.045, 16, 1, 0, Math.PI * 1.5);
+            const ring1Mat = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide, transparent: true, opacity: 0.8 });
+            const ring1 = new THREE.Mesh(ring1Geo, ring1Mat);
             
-            const M = isAscending ? M1 : M2;
+            // 3. Outer HUD Ring (Broken, opposite side)
+            const ring2Geo = new THREE.RingGeometry(0.06, 0.065, 32, 1, Math.PI * 0.5, Math.PI * 1.2);
+            const ring2Mat = new THREE.MeshBasicMaterial({ color: activeSatConfig.color, side: THREE.DoubleSide, transparent: true, opacity: 0.6 });
+            const ring2 = new THREE.Mesh(ring2Geo, ring2Mat);
             
-            const x0 = r * Math.cos(M);
-            const z0 = r * Math.sin(M) * Math.cos(incRad);
+            reticle.add(core);
+            reticle.add(ring1);
+            reticle.add(ring2);
             
-            const angle0 = Math.atan2(z0, x0);
-            const angle1 = Math.atan2(satPos.z, satPos.x);
-            
-            satOrbitGroup.rotation.order = 'YXZ';
-            satOrbitGroup.rotation.x = incRad;
-            satOrbitGroup.rotation.y = angle0 - angle1;
-        }
+            scannerGroup.add(reticle);
+            scannerArrows.push(reticle);
+            satOrbitGroup.add(scannerGroup);
 
-        function updateISSTrail(localVector) {
-            issTrailPoints.push(localVector.clone());
-            if (issTrailPoints.length > 300) issTrailPoints.shift(); 
-            if (!issTrailLine) {
-                const geo = new THREE.BufferGeometry().setFromPoints(issTrailPoints);
-                const mat = new THREE.LineBasicMaterial({ color: activeSatConfig.color, transparent: true, opacity: 0.8, linewidth: 2 });
-                issTrailLine = new THREE.Line(geo, mat);
-                planetMeshes[2].add(issTrailLine); 
-            } else {
-                issTrailLine.geometry.setFromPoints(issTrailPoints);
-            }
-        }
-
-        function updateISSMeshPosition(animate = false) {
-            if (!latestStationData || !currentSatMesh) return;
-            
-            let localVector;
-            if (latestStationData.exactVector) {
-                localVector = latestStationData.exactVector.clone();
-            } else {
-                const earthRadius = 1.0; 
-                const altitudeScale = 0.12; 
-                localVector = latLongToVector3(latestStationData.latitude, latestStationData.longitude, earthRadius, altitudeScale);
-            }
-            
-            updateISSTrail(localVector);
-            alignRingToSatellite(localVector, activeSatConfig.inc * (Math.PI / 180), latestStationData.latitude);
-
-            if (animate) {
-                new TWEEN.Tween(currentSatMesh.position)
-                    .to({ x: localVector.x, y: localVector.y, z: localVector.z }, 4800)
-                    .onUpdate(() => { if (currentSatMesh) currentSatMesh.lookAt(new THREE.Vector3(0,0,0)); })
-                    .start();
-            } else {
-                currentSatMesh.position.copy(localVector);
-                currentSatMesh.lookAt(new THREE.Vector3(0,0,0));
-            }
+            scannerData = { offset: 0 };
+            new TWEEN.Tween(scannerData)
+                .to({ offset: Math.PI * 2 }, 2200) 
+                .easing(TWEEN.Easing.Quadratic.InOut)
+                .onComplete(() => {
+                    satOrbitGroup.remove(scannerGroup);
+                    scannerData = null;
+                    scannerArrows = [];
+                    
+                    isTrailActive = true; 
+                    
+                    const flash = new THREE.PointLight(0xffffff, 5, 10);
+                    currentSatMesh.add(flash);
+                    setTimeout(() => currentSatMesh.remove(flash), 200);
+                })
+                .start();
+                
+            isTrailActive = true; 
         }
 
         window.freeMoveCamera = function() {
@@ -1451,6 +1413,7 @@
             if (!activeSatConfig) return;
             document.getElementById('sat-info-dialog').style.display = 'block';
             document.getElementById('sat-info-title').innerText = activeSatConfig.name;
+            
             const latStr = latestStationData && latestStationData.latitude ? latestStationData.latitude.toFixed(4) + "°" : "N/A";
             const lonStr = latestStationData && latestStationData.longitude ? latestStationData.longitude.toFixed(4) + "°" : "N/A";
             const locStr = latestStationData && latestStationData.locationText ? latestStationData.locationText : "Unknown Region";
@@ -1458,7 +1421,6 @@
             const velMiles = latestStationData && latestStationData.velocity ? (latestStationData.velocity * 0.621371).toFixed(0) + " mph" : activeSatConfig.speed;
 
             document.getElementById('sat-info-content').innerHTML = `
-                <div style="margin-bottom: 8px;"><strong style="color:#00ffcc;">Type:</strong> ${activeSatConfig.type}</div>
                 <div style="margin-bottom: 8px;"><strong style="color:#00ffcc;">Operator:</strong> ${activeSatConfig.owner}</div>
                 <div style="margin-bottom: 8px;"><strong style="color:#00ffcc;">Location:</strong> ${locStr}</div>
                 <div style="margin-bottom: 8px;"><strong style="color:#00ffcc;">Coordinates:</strong> ${latStr}, ${lonStr}</div>
@@ -1470,54 +1432,8 @@
             `;
         };
 
-        function latLongToVector3(lat, lon, radius, height) {
-            var phi = (90 - lat) * (Math.PI / 180);
-            var theta = (lon + 180) * (Math.PI / 180); 
-            var r = radius + height;
-            var x = -(r * Math.sin(phi) * Math.cos(theta));
-            var z = (r * Math.sin(phi) * Math.sin(theta));
-            var y = (r * Math.cos(phi));
-            return new THREE.Vector3(x, y, z);
-        }
-
-        function createSatMesh(type) {
-            const group = new THREE.Group();
-            if (type === 'hst') {
-                const hullGeo = new THREE.CylinderGeometry(0.012, 0.012, 0.08, 16);
-                const hullMat = new THREE.MeshStandardMaterial({color: 0xaaaaaa, metalness: 0.9});
-                const hull = new THREE.Mesh(hullGeo, hullMat);
-                hull.rotation.z = Math.PI / 2;
-                group.add(hull);
-                const lidGeo = new THREE.CylinderGeometry(0.014, 0.014, 0.02, 16);
-                const lid = new THREE.Mesh(lidGeo, new THREE.MeshStandardMaterial({color: 0x222222}));
-                lid.position.x = 0.04; lid.rotation.z = Math.PI / 2;
-                group.add(lid);
-                const panelGeo = new THREE.BoxGeometry(0.05, 0.005, 0.06);
-                const panelMat = new THREE.MeshStandardMaterial({color: 0x113388, metalness: 0.5});
-                const p1 = new THREE.Mesh(panelGeo, panelMat); p1.position.set(0, 0.02, 0); group.add(p1);
-                const p2 = new THREE.Mesh(panelGeo, panelMat); p2.position.set(0, -0.02, 0); group.add(p2);
-            } else if (type === 'css') {
-                const hullGeo = new THREE.CylinderGeometry(0.015, 0.015, 0.08, 16);
-                const hullMat = new THREE.MeshStandardMaterial({color: 0xdddddd, metalness: 0.8});
-                const hull = new THREE.Mesh(hullGeo, hullMat);
-                hull.rotation.z = Math.PI / 2;
-                group.add(hull);
-                const panelGeo = new THREE.BoxGeometry(0.04, 0.01, 0.12);
-                const panelMat = new THREE.MeshStandardMaterial({color: 0x113388});
-                const p1 = new THREE.Mesh(panelGeo, panelMat); p1.position.set(0.02, 0.02, 0); group.add(p1);
-                const p2 = new THREE.Mesh(panelGeo, panelMat); p2.position.set(-0.02, 0.02, 0); group.add(p2);
-            } else { 
-                const hullGeo = new THREE.CylinderGeometry(0.015, 0.015, 0.1, 16);
-                const hullMat = new THREE.MeshStandardMaterial({color: 0xdddddd, metalness: 0.8});
-                const hull = new THREE.Mesh(hullGeo, hullMat);
-                hull.rotation.z = Math.PI / 2;
-                group.add(hull);
-                const panelGeo = new THREE.BoxGeometry(0.08, 0.01, 0.15);
-                const panelMat = new THREE.MeshStandardMaterial({color: 0x113388, metalness: 0.5, roughness: 0.2});
-                const p1 = new THREE.Mesh(panelGeo, panelMat); p1.position.set(0.04, 0.02, 0); group.add(p1);
-                const p2 = new THREE.Mesh(panelGeo, panelMat); p2.position.set(-0.04, 0.02, 0); group.add(p2);
-            }
-            return group;
+        function updateISSMeshPosition(animate = false) {
+            // Already handled seamlessly by orbital math in updatePlanets... this function is kept mostly for the background data ping trigger
         }
 
         // --- Core Application Loop ---
@@ -1528,7 +1444,6 @@
                 lastTime = now;
             }
             
-            // Revolve Asteroid Belt
             if (beltGroup && isPlaying) {
                 beltGroup.rotation.y = accumulatedTime * 0.011; 
             }
@@ -1537,7 +1452,7 @@
                 const p = planetConfigs[index];
                 const angle = accumulatedTime * p.v + index; 
                 
-                // Keep Planets FIXED (Rotation removed as per user correction)
+                // Keep Planets FIXED
                 planetObj.position.x = p.a * Math.cos(angle);
                 planetObj.position.z = p.a * Math.sin(angle);
                 
@@ -1556,8 +1471,76 @@
                 }
             });
 
-            // Space Station Update - FIXED: Removed the conflicting flat-equator override
             if (satOrbitGroup && currentSatMesh) {
+                const timeFactor = Date.now() / 1000;
+                const periodSec = activeSatConfig.period * 60;
+                const phase = (timeFactor % periodSec) / periodSec;
+                const phaseAngle = phase * Math.PI * 2;
+                
+                const r = 1.12; 
+                
+                currentSatMesh.position.set(r * Math.cos(phaseAngle), 0, r * Math.sin(phaseAngle));
+                currentSatMesh.lookAt(new THREE.Vector3(r * Math.cos(phaseAngle + 0.1), 0, r * Math.sin(phaseAngle + 0.1)));
+
+                const earthRotationOffset = (timeFactor % 86400) / 86400 * Math.PI * 2;
+                satOrbitGroup.rotation.y = -earthRotationOffset;
+
+                let trailSourcePos = currentSatMesh.position.clone();
+
+                if (scannerData) {
+                    scannerArrows.forEach((reticle) => {
+                        const angle = phaseAngle + scannerData.offset;
+                        reticle.position.set(r * Math.cos(angle), 0, r * Math.sin(angle));
+                        reticle.lookAt(new THREE.Vector3(r * Math.cos(angle + 0.1), 0, r * Math.sin(angle + 0.1)));
+                        
+                        // Cinematic HUD Spins
+                        reticle.children[0].rotation.y += 0.2;     // Core spin
+                        reticle.children[1].rotation.z -= 0.15;    // Inner ring reverse spin
+                        reticle.children[2].rotation.z += 0.1;     // Outer ring forward spin
+                    });
+                    
+                    trailSourcePos = scannerArrows[0].position.clone();
+                }
+
+                if (isTrailActive) {
+                    if (issTrailPoints.length === 0 || issTrailPoints[issTrailPoints.length - 1].distanceTo(trailSourcePos) > 0.015) {
+                        issTrailPoints.push(trailSourcePos);
+                        if (issTrailPoints.length > 200) issTrailPoints.shift(); // Trail length
+                        
+                        if (!issTrailLine) {
+                            const geo = new THREE.BufferGeometry().setFromPoints(issTrailPoints);
+                            const colors = new Float32Array(issTrailPoints.length * 3);
+                            geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+                            
+                            const mat = new THREE.PointsMaterial({ 
+                                size: 0.1, 
+                                map: glowTexCache, 
+                                transparent: true, 
+                                blending: THREE.AdditiveBlending,
+                                vertexColors: true,
+                                depthWrite: false
+                            });
+                            issTrailLine = new THREE.Points(geo, mat);
+                            satOrbitGroup.add(issTrailLine); 
+                        } else {
+                            issTrailLine.geometry.setFromPoints(issTrailPoints);
+                            
+                            // Exponential fade for the glowing data stream
+                            const positions = issTrailLine.geometry.attributes.position;
+                            const colors = new Float32Array(positions.count * 3);
+                            const baseColor = new THREE.Color(activeSatConfig.color);
+                            
+                            for(let i=0; i<positions.count; i++) {
+                                const ratio = Math.pow(i / positions.count, 2); // Squared for a sharper comet-like fade
+                                colors[i*3] = baseColor.r * ratio;
+                                colors[i*3+1] = baseColor.g * ratio;
+                                colors[i*3+2] = baseColor.b * ratio;
+                            }
+                            issTrailLine.geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+                        }
+                    }
+                }
+
                 if (isCameraLockedToSat) {
                     const globalSatPos = new THREE.Vector3();
                     currentSatMesh.getWorldPosition(globalSatPos);
@@ -1607,7 +1590,7 @@
             const sunGroup = new THREE.Group();
             sunGroup.add(new THREE.Mesh(new THREE.SphereGeometry(3, 64, 64), new THREE.MeshBasicMaterial({ color: 0xffddaa })));
             sunGroup.add(new THREE.Mesh(new THREE.SphereGeometry(3.5, 32, 32), new THREE.MeshBasicMaterial({ color: 0xff8800, transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending })));
-            sunGroup.userData = { isTarget: true, name: "The Sun", type: "G-Type Star", a: 0, v: 0, moons: [], size: 3, comp: "Holds 99.8% of the mass in the solar system." };
+            sunGroup.userData = { isTarget: true, name: "The Sun", type: "G-Type Star", a: 0, v: 0, moons: [], size: 3 };
             interactableObjects.push(sunGroup);
             scene.add(sunGroup);
 
@@ -1677,7 +1660,7 @@
                 planetGroup.add(moonsGroup);
                 planetGroup.userData.moonsGroup = moonsGroup;
 
-                planetGroup.userData = { isTarget: true, name: p.name, type: p.type, a: p.a / 13, v: p.v, moons: p.moons, size: p.size, comp: p.comp, fact: p.fact };
+                planetGroup.userData = { isTarget: true, name: p.name, type: p.type, a: p.a / 13, v: p.v, moons: p.moons, size: p.size };
                 
                 interactableObjects.push(planetGroup);
                 planetMeshes.push(planetGroup);
