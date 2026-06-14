@@ -146,7 +146,7 @@
 <body>
     <!-- OVERLAYS & UI -->
     <div id="flash-overlay"></div>
-    <button id="skip-intro-btn" onclick="forceEndCinematic()">Skip Intro ❯</button>
+    <button id="skip-intro-btn" onclick="window.forceEndCinematic()">Skip Intro ❯</button>
 
     <div id="nolasco-intro">
         <div class="nolasco-wrapper">
@@ -163,7 +163,7 @@
     <div id="sync-status">● Paused</div>
     
     <div id="info-panel" class="panel">
-        <div id="info-title"><span id="target-name">Object</span><span class="close-btn" onclick="resetView()" title="Close HUD & Reset View">✕</span></div>
+        <div id="info-title"><span id="target-name">Object</span><span class="close-btn" onclick="window.resetView()" title="Close HUD & Reset View">✕</span></div>
         <div class="info-stat"><span class="info-label">Type:</span> <span id="info-type" class="info-val">-</span></div>
         <div class="info-stat"><span class="info-label">Speed:</span> <span id="info-vel" class="info-val">-</span></div>
         <div class="info-stat"><span class="info-label">Dist from Sun:</span> <span id="info-dist" class="info-val">-</span></div>
@@ -176,33 +176,33 @@
 
     <div id="ui-container">
         <div style="display: flex; gap: 10px; pointer-events: auto;">
-            <button class="menu-btn" id="btn-planetary-rotation" style="width: auto; padding: 10px 20px; border-color: rgba(255,255,255,0.2); color: white;" onclick="togglePlanetaryRotation()">ROTATION: OFF</button>
-            <button class="menu-btn" style="width: auto; padding: 10px 20px; background: rgba(200, 50, 50, 0.6); border-color: #ff4444;" onclick="returnToSolarOrbit()">RETURN TO SYSTEM</button>
+            <button class="menu-btn" id="btn-planetary-rotation" style="width: auto; padding: 10px 20px; border-color: rgba(255,255,255,0.2); color: white;" onclick="window.togglePlanetaryRotation()">ROTATION: OFF</button>
+            <button class="menu-btn" style="width: auto; padding: 10px 20px; background: rgba(200, 50, 50, 0.6); border-color: #ff4444;" onclick="window.returnToSolarOrbit()">RETURN TO SYSTEM</button>
             <button class="menu-btn" style="width: auto; padding: 10px 20px;" onclick="document.getElementById('menu-main').style.display = (document.getElementById('menu-main').style.display === 'block') ? 'none' : 'block'">COMMAND MENU</button>
         </div>
 
         <div id="menu-main" class="panel">
-            <button class="menu-btn" id="play-pause-btn" onclick="togglePlay()">PLAY MOVEMENT</button>
+            <button class="menu-btn" id="play-pause-btn" onclick="window.togglePlay()">PLAY MOVEMENT</button>
             
-            <button class="menu-btn" onclick="toggleMenu('time-submenu')">TIME CONTROLS ▼</button>
+            <button class="menu-btn" onclick="window.toggleMenu('time-submenu')">TIME CONTROLS ▼</button>
             <div id="time-submenu" class="submenu">
                 <div id="current-time-display">Current: Live System Time</div>
                 <label>Target Date/Time:</label>
-                <input type="datetime-local" id="time-picker" onchange="setSimulationTime()">
-                <button class="menu-btn" onclick="resetToRealTime()">SYNC TO NOW</button>
+                <input type="datetime-local" id="time-picker" onchange="window.setSimulationTime()">
+                <button class="menu-btn" onclick="window.resetToRealTime()">SYNC TO NOW</button>
             </div>
 
-            <button class="menu-btn" onclick="toggleMenu('object-submenu')">SEARCH OBJECTS ▼</button>
+            <button class="menu-btn" onclick="window.toggleMenu('object-submenu')">SEARCH OBJECTS ▼</button>
             <div id="object-submenu" class="submenu" style="position:relative;">
-                <input type="text" id="obj-search" placeholder="e.g. Ceres, Apophis" oninput="showSuggestions(this.value)">
+                <input type="text" id="obj-search" placeholder="e.g. Ceres, Apophis" oninput="window.showSuggestions(this.value)">
                 <div id="suggestions"></div>
-                <button class="menu-btn" style="margin-top: 10px;" onclick="searchSpecificObject()">SEARCH DATABASE</button>
+                <button class="menu-btn" style="margin-top: 10px;" onclick="window.searchSpecificObject()">SEARCH DATABASE</button>
             </div>
 
-            <button class="menu-btn" onclick="toggleMenu('trajectory-submenu')">EARTH TRAJECTORY ▼</button>
+            <button class="menu-btn" onclick="window.toggleMenu('trajectory-submenu')">EARTH TRAJECTORY ▼</button>
             <div id="trajectory-submenu" class="submenu">
                 <p style="font-size: 0.75rem; color: #aaa; margin: 0 0 10px 0;">Scan for objects threatening Earth orbital path.</p>
-                <button class="menu-btn" style="background: rgba(200, 50, 50, 0.6); border-color: #ff4444;" onclick="searchEarthApproaches()">BEGIN SEARCH</button>
+                <button class="menu-btn" style="background: rgba(200, 50, 50, 0.6); border-color: #ff4444;" onclick="window.searchEarthApproaches()">BEGIN SEARCH</button>
             </div>
             
             <button class="menu-btn" onclick="document.getElementById('tracker-panel').style.display='block'">ASTEROID TRACKER</button>
@@ -226,7 +226,7 @@
             <option value="2.0">186.0M miles (2.0 AU)</option>
             <option value="5.0">465.0M miles (5.0 AU)</option>
         </select>
-        <button class="menu-btn" onclick="fetchForeignObject()">FETCH LIVE DATA</button>
+        <button class="menu-btn" onclick="window.fetchForeignObject()">FETCH LIVE DATA</button>
         <p id="tracker-status" style="font-size:0.8rem; color:#aaa; margin-top:5px;"></p>
     </div>
 
@@ -260,14 +260,14 @@
             <span class="close-btn" onclick="document.getElementById('details-dialog').style.display='none'">✕</span>
         </div>
         <div id="obj-info" style="margin-bottom: 20px;"></div>
-        <button class="menu-btn" style="background: rgba(200, 50, 50, 0.6); border-color:#ff4444; color:white; text-align:center; padding: 12px; font-size: 1rem;" onclick="runTrajectorySimulation()">SHOW COLLISION TRAJECTORY</button>
+        <button class="menu-btn" style="background: rgba(200, 50, 50, 0.6); border-color:#ff4444; color:white; text-align:center; padding: 12px; font-size: 1rem;" onclick="window.runTrajectorySimulation()">SHOW COLLISION TRAJECTORY</button>
     </div>
 
     <!-- Space Station Tracker Dialogs -->
     <div id="sat-dialog" class="dialog">
         <div class="dialog-header">
             <span id="sat-dialog-title">ORBITAL DATABASE</span>
-            <span class="close-btn" onclick="closeSatTracker()">✕</span>
+            <span class="close-btn" onclick="window.closeSatTracker()">✕</span>
         </div>
         <div id="sat-loading-view" style="display:none;">
             <div class="sat-loader-container">
@@ -283,18 +283,18 @@
             <div id="sat-detail-content" style="margin-bottom: 10px;"></div>
             <p id="cache-notice" style="font-size: 0.7rem; color: #aaa; text-align: center; margin-bottom: 15px;">Data verified. Cache active to preserve bandwidth.</p>
             <div style="display:flex; justify-content:space-between; margin-bottom: 5px;">
-                <button class="menu-btn" style="width: 48%; background: rgba(100,100,100,0.6);" onclick="showSatList()">◀ BACK</button>
-                <button class="menu-btn" style="width: 48%; background: rgba(0, 200, 100, 0.6); border-color: #00ffaa;" onclick="findSatOrbit()">FIND ON MAP</button>
+                <button class="menu-btn" style="width: 48%; background: rgba(100,100,100,0.6);" onclick="window.showSatList()">◀ BACK</button>
+                <button class="menu-btn" style="width: 48%; background: rgba(0, 200, 100, 0.6); border-color: #00ffaa;" onclick="window.findSatOrbit()">FIND ON MAP</button>
             </div>
-            <button class="menu-btn" style="width: 100%; background: rgba(50, 100, 200, 0.6); border-color: #00aaff; text-align: center;" onclick="forceRefreshSatData()">↻ REFRESH TELEMETRY</button>
+            <button class="menu-btn" style="width: 100%; background: rgba(50, 100, 200, 0.6); border-color: #00aaff; text-align: center;" onclick="window.forceRefreshSatData()">↻ REFRESH TELEMETRY</button>
         </div>
     </div>
 
     <div id="sat-control-menu" class="panel" style="display:none; position:absolute; bottom:20px; right:20px; width:260px; z-index:100;">
         <h3 style="margin-top:0;">STATION CONTROLS</h3>
-        <button class="menu-btn" onclick="freeMoveCamera()">FREE MOVE CAMERA 🎥</button>
-        <button class="menu-btn" onclick="showSatInfo()">INFORMATION ℹ️</button>
-        <button class="menu-btn" style="background: rgba(200, 50, 50, 0.6); border-color: #ff4444;" onclick="returnToSolarOrbit()">RETURN TO SOLAR SYSTEM 🌌</button>
+        <button class="menu-btn" onclick="window.freeMoveCamera()">FREE MOVE CAMERA 🎥</button>
+        <button class="menu-btn" onclick="window.showSatInfo()">INFORMATION ℹ️</button>
+        <button class="menu-btn" style="background: rgba(200, 50, 50, 0.6); border-color: #ff4444;" onclick="window.returnToSolarOrbit()">RETURN TO SOLAR SYSTEM 🌌</button>
     </div>
 
     <div id="sat-info-dialog" class="dialog" style="z-index: 250; left: 20px; transform: translateY(-50%); top: 50%;">
@@ -313,7 +313,6 @@
     <script>
         // ============================================================================
         // 1. GLOBAL VARIABLE DECLARATIONS
-        // Guaranteeing scope stability across all embedded rendering environments
         // ============================================================================
         var scene, camera, renderer, controls;
         var solarSystemGroup, cinematicGroup, deepFieldGroup, milkyWayGroup;
@@ -367,6 +366,7 @@
         var glowTexCache;
         var raycaster;
         var pointerDownPos = new THREE.Vector2();
+        var mouse = new THREE.Vector2();
         var infoSpriteMatCache = null;
 
         const planetConfigs = [
@@ -396,6 +396,21 @@
         // 2. HELPER FUNCTIONS
         // ============================================================================
         
+        function getEarth() {
+            if (typeof solarSystemGroup !== 'undefined' && solarSystemGroup) {
+                const earth = solarSystemGroup.children.find(c => c.userData && c.userData.name === 'Earth');
+                if (earth) return earth;
+            }
+            if (typeof planetMeshes !== 'undefined' && planetMeshes.length > 2) {
+                if (planetMeshes[2].userData && planetMeshes[2].userData.name === 'Earth') return planetMeshes[2];
+            }
+            if (typeof interactableObjects !== 'undefined' && interactableObjects.length > 0) {
+                const earth = interactableObjects.find(o => o.userData && o.userData.name === 'Earth');
+                if (earth) return earth;
+            }
+            return null;
+        }
+
         function triggerFlash(turnWhite, duration = 300) {
             const overlay = document.getElementById('flash-overlay');
             if (overlay) {
@@ -556,42 +571,34 @@
             cinematicGroup.add(milkyWayGroup);
             milkyWayGroup.visible = false; 
             
-            // INCREASED: 150,000 particles for much thicker volume
             const mwCount = 150000; 
             const mwGeo = new THREE.BufferGeometry();
             const mwPos = new Float32Array(mwCount * 3);
             const mwCol = new Float32Array(mwCount * 3);
             
             for(let i=0; i<mwCount; i++) {
-                // Skew distribution slightly toward the core for a dense center
                 const r = Math.pow(Math.random(), 1.5) * 1600; 
-                const branches = 3; // 3 distinct arms for better visual definition
+                const branches = 3; 
                 const branchAngle = (i % branches) * ((Math.PI * 2) / branches);
-                const spinAngle = r * 0.005; // Tighter winding of the spiral
+                const spinAngle = r * 0.005; 
                 
-                // DISORDERLY ARMS: Add "clumpiness" so the dust breaks apart irregularly
                 const clumpiness = Math.sin(r * 0.03) * Math.cos(r * 0.01 + branchAngle);
-                
-                // Wider, messier horizontal scatter
                 const scatterMult = Math.pow(Math.random(), 1.6) * (Math.random() < 0.5 ? 1 : -1);
                 const scatter = scatterMult * (70 + r * 0.2) * (1 + clumpiness * 0.8); 
                 
                 let totalAngle = branchAngle + spinAngle + (scatter / Math.max(r, 1));
                 
-                // 25% of stars form a sparse background disk to fill the gaps
                 if (Math.random() > 0.75) {
                     totalAngle = Math.random() * Math.PI * 2;
                 }
                 
-                // DISORDERLY THICKNESS: Wavy, turbulent disk height
                 const bulge = Math.exp(-r / 250) * 200; 
-                const diskTurbulence = 1 + Math.abs(Math.sin(r * 0.02 + totalAngle * 4)); // Varies wildly 
+                const diskTurbulence = 1 + Math.abs(Math.sin(r * 0.02 + totalAngle * 4));  
                 const disk = Math.exp(-r / 1000) * 45 * diskTurbulence; 
                 const thickness = bulge + disk;
                 
                 let yOffset = (Math.random() + Math.random() + Math.random() - 1.5) * thickness;
                 
-                // Add rogue vertical outliers to make the edges look hazy and rough
                 if (Math.random() > 0.92) {
                     yOffset *= (1.5 + Math.random() * 2.5);
                 }
@@ -607,19 +614,16 @@
             mwGeo.setAttribute('position', new THREE.BufferAttribute(mwPos, 3));
             mwGeo.setAttribute('color', new THREE.BufferAttribute(mwCol, 3));
             
-            // Reduced particle size to 4.0 so the arms are defined, rather than blurred
             mwMat = new THREE.PointsMaterial({ size: 4.0, vertexColors: true, map: glowTexCache, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }); 
             mwPoints = new THREE.Points(mwGeo, mwMat);
             milkyWayGroup.add(mwPoints);
             
-            // Core Glow Spheroid (Tighter and brighter)
             const coreGlowGeo = new THREE.SphereGeometry(120, 32, 32); 
             const coreGlowMat = new THREE.MeshBasicMaterial({ color: 0xffddaa, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending });
             const coreMesh = new THREE.Mesh(coreGlowGeo, coreGlowMat);
-            coreMesh.scale.set(1.0, 0.4, 1.0); // Flatter oblate spheroid
+            coreMesh.scale.set(1.0, 0.4, 1.0); 
             milkyWayGroup.add(coreMesh);
 
-            // Faint volumetric dust disk
             const dustDiskGeo = new THREE.SphereGeometry(1200, 32, 32);
             const dustDiskMat = new THREE.MeshBasicMaterial({ color: 0x112244, transparent: true, opacity: 0.15, blending: THREE.AdditiveBlending, depthWrite: false });
             const dustDisk = new THREE.Mesh(dustDiskGeo, dustDiskMat);
@@ -667,25 +671,38 @@
         }
 
         // --- Bulletproof Raycasting ---
-        function getClientX(e) { return (e.clientX !== undefined) ? e.clientX : (e.changedTouches ? e.changedTouches[0].clientX : 0); }
-        function getClientY(e) { return (e.clientY !== undefined) ? e.clientY : (e.changedTouches ? e.changedTouches[0].clientY : 0); }
+        function getClientX(e) { 
+            if (e.clientX !== undefined) return e.clientX;
+            if (e.changedTouches && e.changedTouches.length > 0) return e.changedTouches[0].clientX;
+            return 0;
+        }
+        function getClientY(e) { 
+            if (e.clientY !== undefined) return e.clientY;
+            if (e.changedTouches && e.changedTouches.length > 0) return e.changedTouches[0].clientY;
+            return 0;
+        }
 
         function onPointerDown(event) {
-            pointerDownPos.set(event.clientX, event.clientY);
+            pointerDownPos.set(getClientX(event), getClientY(event));
         }
 
         function onPointerUp(event) {
             if (!camera || isIntroPlaying) return;
             if (event.target.tagName === 'BUTTON' || event.target.tagName === 'INPUT' || event.target.closest('.panel') || event.target.closest('.dialog')) return;
 
-            const dist = Math.abs(event.clientX - pointerDownPos.x) + Math.abs(event.clientY - pointerDownPos.y);
-            if (dist > 5) return; // Prevent drag clicks
+            const cx = getClientX(event);
+            const cy = getClientY(event);
+            const dist = Math.abs(cx - pointerDownPos.x) + Math.abs(cy - pointerDownPos.y);
+            // GENEROUS DRAG TOLERANCE: Increased to 15 to prevent accidental click cancellation
+            if (dist > 15) return; 
 
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+            mouse.x = (cx / window.innerWidth) * 2 - 1;
+            mouse.y = -(cy / window.innerHeight) * 2 + 1;
 
             raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects(solarSystemGroup.children, true); 
+            
+            // STRICT TARGETING: Scan interactableObjects directly, bypass invisible bounding boxes!
+            const intersects = raycaster.intersectObjects(interactableObjects, true); 
 
             if (intersects.length > 0) {
                 let obj = intersects[0].object;
@@ -713,25 +730,24 @@
                 }
                 
                 if (targetObj && targetObj.userData && targetObj.userData.isTarget) {
-                    // If scanning for NEOs, lock out clicks on major planets and moons
                     if (cameraContext === 'neo_scan') {
                         if (targetObj.userData.type === "Asteroid / NEO" || targetObj.userData.type === "DANGER: INBOUND" || targetObj.userData.type === "Comet / NEO") {
-                            focusOnTarget(targetObj);
+                            window.focusOnTarget(targetObj);
                         } else {
-                            unfocusTarget();
+                            window.unfocusTarget();
                         }
                     } else {
-                        focusOnTarget(targetObj);
+                        window.focusOnTarget(targetObj);
                     }
                 } else {
-                    unfocusTarget();
+                    window.unfocusTarget();
                 }
             } else {
-                unfocusTarget();
+                window.unfocusTarget();
             }
         }
 
-        function focusOnTarget(target) {
+        window.focusOnTarget = function(target) {
             focusedTarget = target;
             const data = target.userData;
             
@@ -766,7 +782,7 @@
 
             const actionsDiv = document.getElementById('dynamic-info-actions');
             if (data.name === "Earth") {
-                actionsDiv.innerHTML = `<button class="menu-btn" style="background: rgba(0, 150, 255, 0.6); border-color: #00aaff; width: 100%; text-align: center; margin: 0; padding: 12px; font-size: 0.9rem;" onclick="openSatTracker()">🛰️ TRACK SPACE STATIONS</button>`;
+                actionsDiv.innerHTML = `<button class="menu-btn" style="background: rgba(0, 150, 255, 0.6); border-color: #00aaff; width: 100%; text-align: center; margin: 0; padding: 12px; font-size: 0.9rem;" onclick="window.openSatTracker()">🛰️ TRACK SPACE STATIONS</button>`;
                 actionsDiv.style.display = 'block';
             } else {
                 actionsDiv.style.display = 'none';
@@ -788,14 +804,11 @@
         window.unfocusTarget = function() {
             focusedTarget = null;
             document.getElementById('info-panel').style.display = 'none';
-        };
 
-        window.resetView = function() {
-            unfocusTarget();
-
-            if (cameraContext === 'neo_scan' && planetMeshes.length > 2) {
+            const earthMesh = getEarth();
+            if (cameraContext === 'neo_scan' && earthMesh) {
                 const earthPos = new THREE.Vector3();
-                planetMeshes[2].getWorldPosition(earthPos);
+                earthMesh.getWorldPosition(earthPos);
                 if (typeof window !== 'undefined' && window.TWEEN) {
                     new TWEEN.Tween(camera.position).to({ 
                         x: earthPos.x + currentNeoViewRadius, 
@@ -829,8 +842,9 @@
             document.getElementById('sync-status').innerHTML = isPlaying ? "● Playing" : "● Paused";
             document.getElementById('sync-status').style.color = isPlaying ? "#00ffcc" : "#ffcc00";
 
-            if (satOrbitGroup && planetMeshes.length > 2) {
-                planetMeshes[2].remove(satOrbitGroup);
+            const earthMesh = getEarth();
+            if (satOrbitGroup && earthMesh) {
+                earthMesh.remove(satOrbitGroup);
                 satOrbitGroup = null;
             }
             if (currentSatMesh) {
@@ -957,7 +971,7 @@
                         const diameterKm = 1329 * Math.pow(10, -h_mag / 5) / Math.sqrt(0.15); 
                         const safeObj = { name: name, date: date, distAU: distAU, distM: distM, vel: vel, diameterKm: diameterKm };
                         const safeData = JSON.stringify(safeObj).replace(/"/g, '&quot;').replace(/'/g, "\\'");
-                        html += `<div class="result-item" onclick="showTrajectoryDetails('${safeData}')"><div class="result-name">${name}</div><div class="result-desc">Approach: ${date} | Dist: ${distM}M miles</div></div>`;
+                        html += `<div class="result-item" onclick="window.showTrajectoryDetails('${safeData}')"><div class="result-name">${name}</div><div class="result-desc">Approach: ${date} | Dist: ${distM}M miles</div></div>`;
                     });
                 } else { html = "<p style='color:#aaa;'>No immediate Earth threats detected.</p>"; }
                 list.innerHTML = html;
@@ -1002,7 +1016,9 @@
             document.getElementById('sync-status').style.color = "#ff4444";
             cameraContext = 'solar_system'; 
 
-            const earthMesh = planetMeshes[2]; 
+            const earthMesh = getEarth(); 
+            if (!earthMesh) return;
+
             const spawnDistance = 80;
             const angle = Math.random() * Math.PI * 2;
             const spawnPos = new THREE.Vector3(Math.cos(angle) * spawnDistance, (Math.random() - 0.5) * 30, Math.sin(angle) * spawnDistance);
@@ -1061,9 +1077,8 @@
         };
 
         async function fetchWithFallback(targetUrl) {
+            // 1. VERCEL PROXY PIPELINE
             let localProxyUrl = null;
-            
-            // 1. Construct Vercel Serverless Proxy URL if applicable
             if (targetUrl.includes('cad.api')) {
                 const urlParams = new URLSearchParams(targetUrl.split('?')[1]);
                 const distVal = urlParams.get('dist-max') || urlParams.get('dist');
@@ -1075,7 +1090,6 @@
                 localProxyUrl = `/api/proxy?des=${encodeURIComponent(desVal)}`;
             }
 
-            // 2. Try Local Vercel Proxy First
             if (localProxyUrl) {
                 try {
                     const response = await fetch(localProxyUrl);
@@ -1086,26 +1100,26 @@
                             return data;
                         }
                     }
-                } catch (e) { console.warn("Local API proxy failed or not available."); }
+                } catch (e) { console.warn("Local API proxy skipped/unavailable."); }
             }
 
-            // 3. Try Direct NASA Connection
+            // 2. DIRECT FETCH 
             try {
                 const response = await fetch(targetUrl, { method: 'GET', mode: 'cors' });
                 if (response.ok) {
                     const data = await response.json();
-                    if (data) {
+                    if (data && (data.data || data.object || data.signature)) {
                         data.simulated = false;
                         return data; 
                     }
                 }
             } catch (e) { } 
             
-            // 4. Try Resilient Public Proxy Pipeline
+            // 3. PUBLIC CORS PROXIES
             const PROXIES = [
                 `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
-                `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`,
-                `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`
+                `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`,
+                `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`
             ];
             
             for (let p = 0; p < PROXIES.length; p++) {
@@ -1117,10 +1131,12 @@
                         
                         if (data && data.contents) {
                             const parsed = JSON.parse(data.contents);
-                            parsed.simulated = false;
-                            return parsed;
+                            if (parsed && (parsed.data || parsed.object || parsed.signature)) {
+                                parsed.simulated = false;
+                                return parsed;
+                            }
                         }
-                        if (data) {
+                        if (data && (data.data || data.object || data.signature)) {
                             data.simulated = false;
                             return data;
                         }
@@ -1128,8 +1144,8 @@
                 } catch (e) { continue; }
             }
             
-            // 5. Offline Cache Fallback
-            console.warn("Notice: Live API routes are currently restricted by the browser sandbox. Loading high-fidelity offline telemetry cache instead.");
+            // 4. OFFLINE CACHE FAILSAFE
+            console.warn("Notice: Live API routes are restricted. Loading offline telemetry cache.");
             const offlineNEOs = ["99942 Apophis", "101955 Bennu", "433 Eros", "162173 Ryugu", "25143 Itokawa", "4179 Toutatis", "1566 Icarus", "3200 Phaethon"];
             
             if (targetUrl.includes('cad.api')) {
@@ -1221,13 +1237,18 @@
             const orbitGroup = new THREE.Group();
             orbitGroup.add(asteroidObj);
 
+            // MASSIVE INVISIBLE HITBOX FOR GUARANTEED CLICK DETECTION
+            const hitGeo = new THREE.SphereGeometry(3.0, 16, 16);
+            const hitMat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.0, depthWrite: false });
+            const hitBox = new THREE.Mesh(hitGeo, hitMat);
+            asteroidObj.add(hitBox);
+
             const sprite = new THREE.Sprite(getInfoSpriteMat());
-            sprite.scale.set(2, 2, 2);
-            sprite.position.set(0, 1.5, 0); 
+            sprite.scale.set(3, 3, 3); // Made the "i" slightly larger
+            sprite.position.set(0, 2.5, 0); // Pushed the "i" higher above the aura
             sprite.renderOrder = 999; 
             asteroidObj.add(sprite);
 
-            // --- NEW: RED PULSATING AURA & DANGER LIGHT ---
             let aura = null;
             if (isPassing && typeof glowTexCache !== 'undefined') {
                 const auraMat = new THREE.SpriteMaterial({ map: glowTexCache, color: 0xff0000, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
@@ -1244,7 +1265,7 @@
             
             const v = 0.08 / Math.sqrt(trueDistAu || 1); 
             const initialAngle = Math.random() * Math.PI * 2;
-            const trailColor = isPassing ? 0xff0000 : 0x00ffff; // Deep red threat trail
+            const trailColor = isPassing ? 0xff0000 : 0x00ffff;
 
             asteroidObj.userData = { 
                 isTarget: true, name: name, type: "Asteroid / NEO", a: trueDistAu, v: null, size: 0.4, speedStr: speedMiS + " mi/s",
@@ -1349,19 +1370,22 @@
                     const statusText = data.simulated ? "NEOs (CACHE)" : "NEOs (LIVE)";
                     document.getElementById('sync-status').innerHTML = `<span class="live-pulse" style="color:${statusColor}">● TRACKING ${data.data.length} ${statusText}</span>`;
 
-                    const earthPos = new THREE.Vector3();
-                    planetMeshes[2].getWorldPosition(earthPos);
+                    const earthMesh = getEarth();
+                    if (earthMesh) {
+                        const earthPos = new THREE.Vector3();
+                        earthMesh.getWorldPosition(earthPos);
 
-                    cameraContext = 'neo_scan';
-                    currentNeoViewRadius = Math.max(parseFloat(dist) * 13 * 1.8, 18); 
+                        cameraContext = 'neo_scan';
+                        currentNeoViewRadius = Math.max(parseFloat(dist) * 13 * 1.8, 18); 
 
-                    if (typeof window !== 'undefined' && window.TWEEN) {
-                        new TWEEN.Tween(camera.position)
-                            .to({ x: earthPos.x + currentNeoViewRadius, y: earthPos.y + (currentNeoViewRadius * 0.7), z: earthPos.z + currentNeoViewRadius }, 2500)
-                            .easing(TWEEN.Easing.Cubic.InOut).start();
-                        new TWEEN.Tween(controls.target)
-                            .to({ x: earthPos.x, y: earthPos.y, z: earthPos.z }, 2500)
-                            .easing(TWEEN.Easing.Cubic.InOut).start();
+                        if (typeof window !== 'undefined' && window.TWEEN) {
+                            new TWEEN.Tween(camera.position)
+                                .to({ x: earthPos.x + currentNeoViewRadius, y: earthPos.y + (currentNeoViewRadius * 0.7), z: earthPos.z + currentNeoViewRadius }, 2500)
+                                .easing(TWEEN.Easing.Cubic.InOut).start();
+                            new TWEEN.Tween(controls.target)
+                                .to({ x: earthPos.x, y: earthPos.y, z: earthPos.z }, 2500)
+                                .easing(TWEEN.Easing.Cubic.InOut).start();
+                        }
                     }
 
                 } else if (data.signature || data.count === "0" || data.count === 0) { 
@@ -1389,7 +1413,7 @@
             let html = "";
             satDatabase.forEach(sat => {
                 html += `
-                    <div class="result-item" onclick="fetchStationData('${sat.id}')">
+                    <div class="result-item" onclick="window.fetchStationData('${sat.id}')">
                         <div class="result-name" style="color:#00ffcc;">${sat.name}</div>
                         <div class="result-desc">Alt: ${sat.orbitHeight} | Operator: ${sat.owner}</div>
                     </div>
@@ -1431,13 +1455,14 @@
         };
 
         window.forceRefreshSatData = function() {
-            fetchStationData(activeSatConfig.id, true);
+            window.fetchStationData(activeSatConfig.id, true);
         };
 
         window.closeSatTracker = function() {
             document.getElementById('sat-dialog').style.display = 'none';
-            if (satOrbitGroup && planetMeshes.length > 2) {
-                planetMeshes[2].remove(satOrbitGroup);
+            const earthMesh = getEarth();
+            if (satOrbitGroup && earthMesh) {
+                earthMesh.remove(satOrbitGroup);
                 satOrbitGroup = null;
             }
             if (currentSatMesh) {
@@ -1450,7 +1475,7 @@
                 if (issTrailLine.material) issTrailLine.material.dispose();
                 issTrailLine = null;
             }
-            unfocusTarget();
+            window.unfocusTarget();
             isTrailActive = false;
         };
 
@@ -1475,7 +1500,7 @@
                     document.getElementById('cache-notice').innerText = "Live Telemetry Fetched. Cache Updated.";
                     updateSatDialogUI();
                 } else {
-                    if (document.getElementById('sat-info-dialog').style.display === 'block') showSatInfo();
+                    if (document.getElementById('sat-info-dialog').style.display === 'block') window.showSatInfo();
                 }
             } catch(e) {
                 if (!isBackground) {
@@ -1548,12 +1573,18 @@
 
         window.findSatOrbit = function() {
             document.getElementById('sat-dialog').style.display = 'none';
-            unfocusTarget();
+            window.unfocusTarget();
             document.getElementById('menu-main').style.display = 'none';
             document.getElementById('sat-control-menu').style.display = 'block';
 
-            if (satOrbitGroup && planetMeshes.length > 2) {
-                planetMeshes[2].remove(satOrbitGroup);
+            const earthMesh = getEarth();
+            if (!earthMesh) {
+                console.warn("Target lost: Earth mesh is not defined.");
+                return;
+            }
+
+            if (satOrbitGroup) {
+                earthMesh.remove(satOrbitGroup);
             }
             issTrailPoints = [];
             isTrailActive = false;
@@ -1565,7 +1596,7 @@
             satOrbitGroup = new THREE.Group();
             satOrbitGroup.rotation.order = 'YXZ';
             satOrbitGroup.rotation.x = activeSatConfig.inc * (Math.PI / 180);
-            planetMeshes[2].add(satOrbitGroup); 
+            earthMesh.add(satOrbitGroup); 
             
             const group = new THREE.Group();
             if (activeSatConfig.id === 'hst') {
@@ -1598,7 +1629,7 @@
             isCameraLockedToSat = true;
 
             const earthPos = new THREE.Vector3();
-            planetMeshes[2].getWorldPosition(earthPos);
+            earthMesh.getWorldPosition(earthPos);
 
             const midCamPos = camera.position.clone().lerp(earthPos, 0.5);
             midCamPos.y += 15; 
@@ -1637,7 +1668,7 @@
                             if (geoData.principalSubdivision && geoData.countryName) latestStationData.locationText = `${geoData.principalSubdivision}, ${geoData.countryName}`;
                             else if (geoData.locality) latestStationData.locationText = geoData.locality;
                             else latestStationData.locationText = "Over open ocean";
-                            if (document.getElementById('sat-info-dialog').style.display === 'block') showSatInfo();
+                            if (document.getElementById('sat-info-dialog').style.display === 'block') window.showSatInfo();
                         }).catch(e => { });
                 }
             }, 5000);
@@ -1715,26 +1746,95 @@
         };
 
         window.forceEndCinematic = function() {
-            const overlay = document.getElementById('flash-overlay');
+            const skipBtn = document.getElementById('skip-intro-btn');
+            if (skipBtn) skipBtn.style.display = 'none';
+
             const intro = document.getElementById('nolasco-intro');
-            if (overlay) overlay.style.opacity = '0';
-            if (intro) intro.style.display = 'none';
+            if (intro) {
+                intro.style.opacity = '0';
+                setTimeout(() => { if (intro) intro.style.display = 'none'; }, 500);
+            }
             
-            endCinematicState();
+            // Instantly kill the slow cinematic sequence
+            if (typeof window !== 'undefined' && window.TWEEN) {
+                window.TWEEN.removeAll();
+            }
+
+            // Tell the main render loop to hand camera control back to OrbitControls
+            isIntroPlaying = false; 
+
+            if (camera && typeof window !== 'undefined' && window.TWEEN) {
+                // 1. Trigger Tunnel Vision Warp
+                new TWEEN.Tween(camera).to({ fov: 160 }, 800)
+                    .easing(TWEEN.Easing.Exponential.In)
+                    .onUpdate(() => camera.updateProjectionMatrix())
+                    .start();
+                    
+                // 2. Thrust Camera Forward Aggressively
+                const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+                const targetPos = camera.position.clone().add(forward.multiplyScalar(2000));
+
+                new TWEEN.Tween(camera.position).to({ x: targetPos.x, y: targetPos.y, z: targetPos.z }, 800)
+                    .easing(TWEEN.Easing.Exponential.In)
+                    .start();
+                
+                // Force the camera to stay looking straight ahead during the warp
+                if (controls) controls.target.copy(targetPos);
+
+                setTimeout(() => {
+                    // 3. Flash Screen White at Peak Speed
+                    triggerFlash(true, 150);
+                    
+                    setTimeout(() => {
+                        // 4. Swap to Solar System under the cover of the flash
+                        if (milkyWayGroup) milkyWayGroup.visible = false;
+                        if (deepFieldGroup) deepFieldGroup.visible = false;
+                        if (cinematicGroup && scene) scene.remove(cinematicGroup); 
+                        if (solarSystemGroup) {
+                            solarSystemGroup.visible = true;
+                            solarSystemGroup.scale.set(1, 1, 1);
+                        }
+                        
+                        camera.fov = 60;
+                        camera.updateProjectionMatrix();
+                        
+                        // Spawn camera high above the solar system
+                        camera.position.set(0, 800, 1200);
+                        if (controls) {
+                            controls.target.set(0, 0, 0);
+                            controls.enabled = false; // Disable dragging temporarily while diving in
+                        }
+
+                        // Fade out the white flash
+                        triggerFlash(false, 1500);
+
+                        // 5. Epic drop-in to the final viewpoint
+                        new TWEEN.Tween(camera.position).to({ x: 0, y: 50, z: 80 }, 2500)
+                            .easing(TWEEN.Easing.Cubic.Out)
+                            .onComplete(() => {
+                                endCinematicState();
+                            })
+                            .start();
+
+                    }, 150);
+                }, 700);
+            } else {
+                endCinematicState();
+            }
         }
 
         function endCinematicState() {
             isIntroPlaying = false;
             
-            if (camera) camera.position.set(0, 50, 80);
+            if (camera) {
+                camera.fov = 60;
+                camera.updateProjectionMatrix();
+            }
+            
             if (controls) {
                 controls.enabled = true;
                 controls.target.set(0, 0, 0);
                 controls.update();
-            }
-            if (camera) {
-                camera.fov = 60;
-                camera.updateProjectionMatrix();
             }
             
             const ui = document.getElementById('ui-container');
@@ -1820,16 +1920,13 @@
                 await sleep(2500);
                 if (!isIntroPlaying) return;
 
-                // Pick a truly random spot in the galactic disk every time!
-                const diveAngle = Math.random() * Math.PI * 2;
-                const diveRadius = 500 + Math.random() * 600; // Between 500 and 1100 units from core
-                const diveY = (Math.random() - 0.5) * 80; // Slight random elevation
-                
-                const zone = new THREE.Vector3(
-                    Math.cos(diveAngle) * diveRadius,
-                    diveY,
-                    Math.sin(diveAngle) * diveRadius
-                );
+                const mwZones = [
+                    new THREE.Vector3(800, 50, 800),
+                    new THREE.Vector3(-800, 40, 800),
+                    new THREE.Vector3(800, -30, -800),
+                    new THREE.Vector3(-800, 60, -800)
+                ];
+                const zone = mwZones[Math.floor(Math.random() * mwZones.length)];
                 
                 new TWEEN.Tween(cinematicLookAt).to({ x: zone.x, y: zone.y, z: zone.z }, 1000).easing(TWEEN.Easing.Cubic.InOut).start();
                 await sleep(1000);
@@ -2125,18 +2222,16 @@
                     const r = config.a * (1 - config.e * config.e) / (1 + config.e * Math.cos(currentAngle));
                     mesh.position.set(r * Math.cos(currentAngle), 0, r * Math.sin(currentAngle));
 
-                    // --- NEW: DYNAMIC PULSATING FX ---
                     const timePhase = Date.now() * 0.005 + config.initialAngle; 
-                    const pulseScale = 1 + Math.sin(timePhase) * 0.4; // Throbs between 0.6 and 1.4
+                    const pulseScale = 1 + Math.sin(timePhase) * 0.4;
 
                     if (mesh.userData.aura) {
                         mesh.userData.aura.scale.set(2.5 * pulseScale, 2.5 * pulseScale, 1);
-                        mesh.userData.aura.material.opacity = 0.4 + Math.sin(timePhase) * 0.6; // Breathes opacity
+                        mesh.userData.aura.material.opacity = 0.4 + Math.sin(timePhase) * 0.6;
                     }
 
                     updateDynamicTrail(mesh, mesh.position.clone(), mesh.userData.color, false);
                     
-                    // Throbs the thickness of the entire trail tail
                     if (mesh.userData.trailLine && mesh.userData.trailLine.material) {
                         mesh.userData.trailLine.material.size = 0.25 * pulseScale;
                     }
