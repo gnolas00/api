@@ -556,35 +556,75 @@
             cinematicGroup.add(milkyWayGroup);
             milkyWayGroup.visible = false; 
             
-            const mwCount = 80000;
+            // INCREASED: 150,000 particles for much thicker volume
+            const mwCount = 150000; 
             const mwGeo = new THREE.BufferGeometry();
             const mwPos = new Float32Array(mwCount * 3);
             const mwCol = new Float32Array(mwCount * 3);
             
             for(let i=0; i<mwCount; i++) {
-                const r = Math.random() * 1200;
-                const branches = 4;
+                // Skew distribution slightly toward the core for a dense center
+                const r = Math.pow(Math.random(), 1.5) * 1600; 
+                const branches = 3; // 3 distinct arms for better visual definition
                 const branchAngle = (i % branches) * ((Math.PI * 2) / branches);
-                const spinAngle = r * 0.015; 
-                const totalAngle = branchAngle + spinAngle + (Math.random()-0.5)*1.2;
+                const spinAngle = r * 0.005; // Tighter winding of the spiral
                 
+                // DISORDERLY ARMS: Add "clumpiness" so the dust breaks apart irregularly
+                const clumpiness = Math.sin(r * 0.03) * Math.cos(r * 0.01 + branchAngle);
+                
+                // Wider, messier horizontal scatter
+                const scatterMult = Math.pow(Math.random(), 1.6) * (Math.random() < 0.5 ? 1 : -1);
+                const scatter = scatterMult * (70 + r * 0.2) * (1 + clumpiness * 0.8); 
+                
+                let totalAngle = branchAngle + spinAngle + (scatter / Math.max(r, 1));
+                
+                // 25% of stars form a sparse background disk to fill the gaps
+                if (Math.random() > 0.75) {
+                    totalAngle = Math.random() * Math.PI * 2;
+                }
+                
+                // DISORDERLY THICKNESS: Wavy, turbulent disk height
+                const bulge = Math.exp(-r / 250) * 200; 
+                const diskTurbulence = 1 + Math.abs(Math.sin(r * 0.02 + totalAngle * 4)); // Varies wildly 
+                const disk = Math.exp(-r / 1000) * 45 * diskTurbulence; 
+                const thickness = bulge + disk;
+                
+                let yOffset = (Math.random() + Math.random() + Math.random() - 1.5) * thickness;
+                
+                // Add rogue vertical outliers to make the edges look hazy and rough
+                if (Math.random() > 0.92) {
+                    yOffset *= (1.5 + Math.random() * 2.5);
+                }
+
                 mwPos[i*3] = Math.cos(totalAngle) * r + (Math.random()-0.5)*30;
-                mwPos[i*3+1] = (Math.random() - 0.5) * (40 - (r*0.02)); 
+                mwPos[i*3+1] = yOffset; 
                 mwPos[i*3+2] = Math.sin(totalAngle) * r + (Math.random()-0.5)*30;
 
-                const coreRatio = Math.max(0, 1 - (r / 600));
+                const coreRatio = Math.max(0, 1 - (r / 900));
                 const c = new THREE.Color().setHSL(0.6 - (coreRatio*0.5), 0.8, 0.4 + coreRatio*0.6);
                 mwCol[i*3] = c.r; mwCol[i*3+1] = c.g; mwCol[i*3+2] = c.b;
             }
             mwGeo.setAttribute('position', new THREE.BufferAttribute(mwPos, 3));
             mwGeo.setAttribute('color', new THREE.BufferAttribute(mwCol, 3));
-            mwMat = new THREE.PointsMaterial({ size: 3.0, vertexColors: true, map: glowTexCache, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
+            
+            // Reduced particle size to 4.0 so the arms are defined, rather than blurred
+            mwMat = new THREE.PointsMaterial({ size: 4.0, vertexColors: true, map: glowTexCache, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }); 
             mwPoints = new THREE.Points(mwGeo, mwMat);
             milkyWayGroup.add(mwPoints);
             
-            const coreGlowGeo = new THREE.SphereGeometry(100, 32, 32);
-            const coreGlowMat = new THREE.MeshBasicMaterial({ color: 0xffddaa, transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending });
-            milkyWayGroup.add(new THREE.Mesh(coreGlowGeo, coreGlowMat));
+            // Core Glow Spheroid (Tighter and brighter)
+            const coreGlowGeo = new THREE.SphereGeometry(120, 32, 32); 
+            const coreGlowMat = new THREE.MeshBasicMaterial({ color: 0xffddaa, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending });
+            const coreMesh = new THREE.Mesh(coreGlowGeo, coreGlowMat);
+            coreMesh.scale.set(1.0, 0.4, 1.0); // Flatter oblate spheroid
+            milkyWayGroup.add(coreMesh);
+
+            // Faint volumetric dust disk
+            const dustDiskGeo = new THREE.SphereGeometry(1200, 32, 32);
+            const dustDiskMat = new THREE.MeshBasicMaterial({ color: 0x112244, transparent: true, opacity: 0.15, blending: THREE.AdditiveBlending, depthWrite: false });
+            const dustDisk = new THREE.Mesh(dustDiskGeo, dustDiskMat);
+            dustDisk.scale.set(1.0, 0.05, 1.0); 
+            milkyWayGroup.add(dustDisk);
 
             // Big Bang origin flash
             const flashGeo = new THREE.SphereGeometry(10, 32, 32);
@@ -631,25 +671,21 @@
         function getClientY(e) { return (e.clientY !== undefined) ? e.clientY : (e.changedTouches ? e.changedTouches[0].clientY : 0); }
 
         function onPointerDown(event) {
-            pointerDownPos.set(getClientX(event), getClientY(event));
+            pointerDownPos.set(event.clientX, event.clientY);
         }
 
         function onPointerUp(event) {
             if (!camera || isIntroPlaying) return;
             if (event.target.tagName === 'BUTTON' || event.target.tagName === 'INPUT' || event.target.closest('.panel') || event.target.closest('.dialog')) return;
 
-            const cx = getClientX(event);
-            const cy = getClientY(event);
-            const dist = Math.abs(cx - pointerDownPos.x) + Math.abs(cy - pointerDownPos.y);
+            const dist = Math.abs(event.clientX - pointerDownPos.x) + Math.abs(event.clientY - pointerDownPos.y);
             if (dist > 5) return; // Prevent drag clicks
 
-            mouse.x = (cx / window.innerWidth) * 2 - 1;
-            mouse.y = -(cy / window.innerHeight) * 2 + 1;
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
             raycaster.setFromCamera(mouse, camera);
-            
-            // STRICT TARGETING: Only intersect objects explicitly tagged as interactable
-            const intersects = raycaster.intersectObjects(interactableObjects, true); 
+            const intersects = raycaster.intersectObjects(solarSystemGroup.children, true); 
 
             if (intersects.length > 0) {
                 let obj = intersects[0].object;
@@ -677,7 +713,16 @@
                 }
                 
                 if (targetObj && targetObj.userData && targetObj.userData.isTarget) {
-                    focusOnTarget(targetObj);
+                    // If scanning for NEOs, lock out clicks on major planets and moons
+                    if (cameraContext === 'neo_scan') {
+                        if (targetObj.userData.type === "Asteroid / NEO" || targetObj.userData.type === "DANGER: INBOUND" || targetObj.userData.type === "Comet / NEO") {
+                            focusOnTarget(targetObj);
+                        } else {
+                            unfocusTarget();
+                        }
+                    } else {
+                        focusOnTarget(targetObj);
+                    }
                 } else {
                     unfocusTarget();
                 }
@@ -1150,17 +1195,30 @@
             sprite.renderOrder = 999; 
             asteroidObj.add(sprite);
 
+            // --- NEW: RED PULSATING AURA & DANGER LIGHT ---
+            let aura = null;
+            if (isPassing && typeof glowTexCache !== 'undefined') {
+                const auraMat = new THREE.SpriteMaterial({ map: glowTexCache, color: 0xff0000, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
+                aura = new THREE.Sprite(auraMat);
+                aura.scale.set(3.0, 3.0, 1.0);
+                asteroidObj.add(aura);
+                
+                const dangerLight = new THREE.PointLight(0xff0000, 2, 30);
+                asteroidObj.add(dangerLight);
+            }
+
             const trueDistAu = a / 13;
             const speedMiS = ((Math.random() * 10 + 10) / Math.sqrt(trueDistAu || 1)).toFixed(2);
             
             const v = 0.08 / Math.sqrt(trueDistAu || 1); 
             const initialAngle = Math.random() * Math.PI * 2;
-            const trailColor = isPassing ? 0xff4444 : 0x00ffff;
+            const trailColor = isPassing ? 0xff0000 : 0x00ffff; // Deep red threat trail
 
             asteroidObj.userData = { 
                 isTarget: true, name: name, type: "Asteroid / NEO", a: trueDistAu, v: null, size: 0.4, speedStr: speedMiS + " mi/s",
                 orbitConfig: { a: a, e: e, v: v, initialAngle: initialAngle },
-                color: trailColor
+                color: trailColor,
+                aura: aura
             };
             
             interactableObjects.push(asteroidObj);
@@ -1730,13 +1788,16 @@
                 await sleep(2500);
                 if (!isIntroPlaying) return;
 
-                const mwZones = [
-                    new THREE.Vector3(800, 50, 800),
-                    new THREE.Vector3(-800, 40, 800),
-                    new THREE.Vector3(800, -30, -800),
-                    new THREE.Vector3(-800, 60, -800)
-                ];
-                const zone = mwZones[Math.floor(Math.random() * mwZones.length)];
+                // Pick a truly random spot in the galactic disk every time!
+                const diveAngle = Math.random() * Math.PI * 2;
+                const diveRadius = 500 + Math.random() * 600; // Between 500 and 1100 units from core
+                const diveY = (Math.random() - 0.5) * 80; // Slight random elevation
+                
+                const zone = new THREE.Vector3(
+                    Math.cos(diveAngle) * diveRadius,
+                    diveY,
+                    Math.sin(diveAngle) * diveRadius
+                );
                 
                 new TWEEN.Tween(cinematicLookAt).to({ x: zone.x, y: zone.y, z: zone.z }, 1000).easing(TWEEN.Easing.Cubic.InOut).start();
                 await sleep(1000);
@@ -2032,7 +2093,21 @@
                     const r = config.a * (1 - config.e * config.e) / (1 + config.e * Math.cos(currentAngle));
                     mesh.position.set(r * Math.cos(currentAngle), 0, r * Math.sin(currentAngle));
 
+                    // --- NEW: DYNAMIC PULSATING FX ---
+                    const timePhase = Date.now() * 0.005 + config.initialAngle; 
+                    const pulseScale = 1 + Math.sin(timePhase) * 0.4; // Throbs between 0.6 and 1.4
+
+                    if (mesh.userData.aura) {
+                        mesh.userData.aura.scale.set(2.5 * pulseScale, 2.5 * pulseScale, 1);
+                        mesh.userData.aura.material.opacity = 0.4 + Math.sin(timePhase) * 0.6; // Breathes opacity
+                    }
+
                     updateDynamicTrail(mesh, mesh.position.clone(), mesh.userData.color, false);
+                    
+                    // Throbs the thickness of the entire trail tail
+                    if (mesh.userData.trailLine && mesh.userData.trailLine.material) {
+                        mesh.userData.trailLine.material.size = 0.25 * pulseScale;
+                    }
                 });
 
                 if (satOrbitGroup && currentSatMesh) {
