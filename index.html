@@ -1061,6 +1061,35 @@
         };
 
         async function fetchWithFallback(targetUrl) {
+            let localProxyUrl = null;
+            
+            // 1. Construct Vercel Serverless Proxy URL if applicable
+            if (targetUrl.includes('cad.api')) {
+                const urlParams = new URLSearchParams(targetUrl.split('?')[1]);
+                const distVal = urlParams.get('dist-max') || urlParams.get('dist');
+                const limitVal = urlParams.get('limit') || 5;
+                localProxyUrl = `/api/proxy?dist=${encodeURIComponent(distVal)}&limit=${encodeURIComponent(limitVal)}`;
+            } else if (targetUrl.includes('sbdb.api')) {
+                const urlParams = new URLSearchParams(targetUrl.split('?')[1]);
+                const desVal = urlParams.get('sstr');
+                localProxyUrl = `/api/proxy?des=${encodeURIComponent(desVal)}`;
+            }
+
+            // 2. Try Local Vercel Proxy First
+            if (localProxyUrl) {
+                try {
+                    const response = await fetch(localProxyUrl);
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data && (data.data || data.object || data.signature)) {
+                            data.simulated = false;
+                            return data;
+                        }
+                    }
+                } catch (e) { console.warn("Local API proxy failed or not available."); }
+            }
+
+            // 3. Try Direct NASA Connection
             try {
                 const response = await fetch(targetUrl, { method: 'GET', mode: 'cors' });
                 if (response.ok) {
@@ -1072,6 +1101,7 @@
                 }
             } catch (e) { } 
             
+            // 4. Try Resilient Public Proxy Pipeline
             const PROXIES = [
                 `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
                 `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`,
@@ -1098,6 +1128,8 @@
                 } catch (e) { continue; }
             }
             
+            // 5. Offline Cache Fallback
+            console.warn("Notice: Live API routes are currently restricted by the browser sandbox. Loading high-fidelity offline telemetry cache instead.");
             const offlineNEOs = ["99942 Apophis", "101955 Bennu", "433 Eros", "162173 Ryugu", "25143 Itokawa", "4179 Toutatis", "1566 Icarus", "3200 Phaethon"];
             
             if (targetUrl.includes('cad.api')) {
