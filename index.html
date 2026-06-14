@@ -62,18 +62,27 @@
             50% { transform: translateY(0); animation-timing-function: cubic-bezier(0, 0, 0.2, 1); }
         }
 
-        /* Full Screen Flashbang Overlay for Cinematic Scene Transitions */
+        /* Full Screen Flashbang Overlay */
         #flash-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background-color: #ffffff;
-            z-index: 9998; /* Just under nolasco intro */
+            z-index: 9998; 
             opacity: 0;
             pointer-events: none;
             transition: opacity 0.3s cubic-bezier(0.25, 1, 0.5, 1);
         }
 
-        /* Glassmorphism UI (Hidden Initially for Cinematic Sequence) */
-        #ui-container { position: absolute; top: 20px; right: 20px; z-index: 10; display: flex; flex-direction: column; align-items: flex-end; opacity: 0; pointer-events: none; transition: opacity 2s ease; }
+        #skip-intro-btn {
+            position: fixed; bottom: 30px; right: 30px; z-index: 9999;
+            background: rgba(200, 50, 50, 0.8); color: white; border: 1px solid #ff4444; 
+            padding: 10px 20px; border-radius: 6px; cursor: pointer; font-family: 'Segoe UI', sans-serif;
+            font-size: 0.8rem; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;
+            transition: 0.3s;
+        }
+        #skip-intro-btn:hover { background: #ff4444; box-shadow: 0 0 15px rgba(255, 68, 68, 0.6); }
+
+        /* Glassmorphism UI */
+        #ui-container { position: absolute; top: 20px; right: 20px; z-index: 10; display: flex; flex-direction: column; align-items: flex-end; opacity: 0; pointer-events: none; transition: opacity 1.5s ease; }
         #sync-status { position: absolute; top: 20px; left: 20px; color: #00ffcc; font-size: 0.85rem; font-weight: bold; background: rgba(10,15,30,0.7); backdrop-filter: blur(10px); padding: 8px 15px; border-radius: 8px; border: 1px solid rgba(0,255,204,0.3); text-transform: uppercase; letter-spacing: 1px; z-index: 50; opacity: 0; pointer-events: none; transition: opacity 2s ease; }
         
         .panel { background: rgba(15, 20, 25, 0.85); backdrop-filter: blur(12px); padding: 15px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 10px 30px rgba(0,0,0,0.8); color: #fff; }
@@ -86,7 +95,7 @@
         input[type="text"], input[type="number"], select, input[type="datetime-local"] { width: 100%; box-sizing: border-box; background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 8px; border-radius: 4px; margin-bottom: 10px; }
         input[type="datetime-local"] { color-scheme: dark; }
         
-        #suggestions { position: absolute; width: 100%; background: #111; border: 1px solid #444; border-top: none; max-height: 150px; overflow-y: auto; z-index: 20; display: none; border-radius: 0 0 6px 6px; }
+        #suggestions { position: absolute; width: calc(100% - 30px); background: #111; border: 1px solid #444; border-top: none; max-height: 150px; overflow-y: auto; z-index: 20; display: none; border-radius: 0 0 6px 6px; }
         .suggestion-item { padding: 8px; cursor: pointer; font-size: 0.8rem; border-bottom: 1px solid #333; }
         .suggestion-item:hover { background: rgba(0,255,204,0.3); }
         
@@ -135,7 +144,9 @@
     </style>
 </head>
 <body>
+    <!-- OVERLAYS & UI -->
     <div id="flash-overlay"></div>
+    <button id="skip-intro-btn" onclick="forceEndCinematic()">Skip Intro ❯</button>
 
     <div id="nolasco-intro">
         <div class="nolasco-wrapper">
@@ -149,7 +160,7 @@
         </div>
     </div>
 
-    <div id="sync-status">● Real-time Mode</div>
+    <div id="sync-status">● Paused</div>
     
     <div id="info-panel" class="panel">
         <div id="info-title"><span id="target-name">Object</span><span class="close-btn" onclick="resetView()" title="Close HUD & Reset View">✕</span></div>
@@ -160,7 +171,7 @@
         <div class="info-fact" id="info-fact"></div>
         <div class="info-comp" id="info-comp"></div>
         <div id="dynamic-info-actions" style="display:none; margin-top:15px;"></div>
-        <div id="unfocus-hint">Click the X to zoom out</div>
+        <div id="unfocus-hint">Click empty space to reset view</div>
     </div>
 
     <div id="ui-container">
@@ -219,7 +230,7 @@
         <p id="tracker-status" style="font-size:0.8rem; color:#aaa; margin-top:5px;"></p>
     </div>
 
-    <!-- Loading & Dialog Boxes -->
+    <!-- Dialogs -->
     <div id="neo-loading-dialog" class="dialog">
         <div class="dialog-header">
             <span>DEEP SPACE SCAN</span>
@@ -294,14 +305,14 @@
         <div id="sat-info-content" style="font-size: 0.85rem; line-height: 1.6; color: #ddd;"></div>
     </div>
 
-    <!-- Scripts mapped at the Global scope to prevent strict-mode ReferenceErrors -->
+    <!-- Core Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
     
     <script>
         // ============================================================================
-        // GLOBAL VARIABLE DECLARATIONS
+        // 1. GLOBAL VARIABLE DECLARATIONS
         // Guaranteeing scope stability across all embedded rendering environments
         // ============================================================================
         var scene, camera, renderer, controls;
@@ -318,7 +329,7 @@
         var trackedMeshes = [];
         var isPlaying = false; 
         var isPlanetaryRotationOn = false;
-        var lastTime;
+        var lastTime = Date.now();
         var accumulatedTimeDays = 0; 
         var focusedTarget = null;
         var liveTrackingInterval = null; 
@@ -355,19 +366,18 @@
         var textureLoader;
         var glowTexCache;
         var raycaster;
-        var mouse;
+        var pointerDownPos = new THREE.Vector2();
         var infoSpriteMatCache = null;
 
-        // --- Real J2000 Keplerian Planetary Configs ---
         const planetConfigs = [
-            { name: "Mercury", a: 6, e: 0.205, w: 1.35, M0: 3.05, periodDays: 87.97, type: "Terrestrial", color: 0x999999, size: 0.38, moons: [], rough: 0.9 },
-            { name: "Venus", a: 9, e: 0.007, w: 2.29, M0: 0.88, periodDays: 224.70, type: "Terrestrial", color: 0xe3bb76, size: 0.95, moons: [], rough: 0.4 },
-            { name: "Earth", a: 13, e: 0.017, w: 1.79, M0: 6.24, periodDays: 365.25, type: "Terrestrial", color: 0x2e72b9, size: 1.0, moons: [{ name: "Luna", size: 0.35, dist: 3.0, speed: 0.05, color: 0xdddddd, fact: "Earth's only natural satellite, responsible for the tides." }], rough: 0.6 },
-            { name: "Mars", a: 17, e: 0.093, w: 5.00, M0: 0.33, periodDays: 686.98, type: "Terrestrial", color: 0xc1440e, size: 0.53, moons: [{ name: "Phobos", size: 0.2, dist: 2.0, speed: 0.08, color: 0x887766, fact: "Gradually spiraling closer to Mars." }, { name: "Deimos", size: 0.15, dist: 2.8, speed: 0.06, color: 0x998877, fact: "The smaller and outermost moon of Mars." }], rough: 0.8 },
-            { name: "Jupiter", a: 28, e: 0.048, w: 0.25, M0: 0.35, periodDays: 4332.59, type: "Gas Giant", color: 0xd6a57e, size: 3.0, rings: { inner: 3.5, outer: 4.5, color: 0xaa9988, opacity: 0.3 }, moons: [{ name: "Io", size: 0.35, dist: 6.0, speed: 0.08, color: 0xddccaa, fact: "The most volcanically active body in the Solar System." }, { name: "Europa", size: 0.3, dist: 7.0, speed: 0.06, color: 0xaaccff, fact: "Thought to have a massive subsurface ocean." }, { name: "Ganymede", size: 0.4, dist: 8.5, speed: 0.04, color: 0xaabbcc, fact: "The largest moon in the Solar System." }, { name: "Callisto", size: 0.35, dist: 10.0, speed: 0.03, color: 0x999999, fact: "The most heavily cratered object in the Solar System." }], rough: 0.3 },
-            { name: "Saturn", a: 42, e: 0.054, w: 1.61, M0: 5.54, periodDays: 10759.22, type: "Gas Giant", color: 0xf4d03f, size: 2.5, rings: { inner: 3.0, outer: 6.5, color: 0xddccaa, opacity: 0.8 }, moons: [{ name: "Titan", size: 0.4, dist: 9.0, speed: 0.05, color: 0xddaa55, fact: "Has a thick atmosphere and liquid methane lakes." }, { name: "Enceladus", size: 0.2, dist: 11.0, speed: 0.09, color: 0xffffff, fact: "Sprays icy plumes from a global subsurface ocean." }], rough: 0.3 },
-            { name: "Uranus", a: 56, e: 0.047, w: 2.98, M0: 2.48, periodDays: 30685.4, type: "Ice Giant", color: 0x9bd7d5, size: 1.8, rings: { inner: 2.2, outer: 3.2, color: 0xffffff, opacity: 0.2 }, moons: [{ name: "Titania", size: 0.3, dist: 5.0, speed: 0.06, color: 0xaaaaaa, fact: "The largest of the moons of Uranus." }], rough: 0.2 },
-            { name: "Neptune", a: 70, e: 0.009, w: 0.78, M0: 4.65, periodDays: 60189.0, type: "Ice Giant", color: 0x3e54e8, size: 1.7, moons: [{ name: "Triton", size: 0.3, dist: 5.0, speed: 0.07, color: 0xaaffdd, fact: "Orbits in the opposite direction of Neptune's rotation." }], rough: 0.2 }
+            { name: "Mercury", a: 6, e: 0.205, w: 1.35, M0: 3.05, periodDays: 87.97, type: "Terrestrial", color: 0x999999, size: 0.38, moons: [], rough: 0.9, fact: "The smallest planet in our solar system and closest to the Sun.", comp: "Slightly larger than Earth's Moon." },
+            { name: "Venus", a: 9, e: 0.007, w: 2.29, M0: 0.88, periodDays: 224.70, type: "Terrestrial", color: 0xe3bb76, size: 0.95, moons: [], rough: 0.4, fact: "Spins slowly in the opposite direction of most planets.", comp: "Earth's toxic twin, similar in size and structure." },
+            { name: "Earth", a: 13, e: 0.017, w: 1.79, M0: 6.24, periodDays: 365.25, type: "Terrestrial", color: 0x2e72b9, size: 1.0, moons: [{ name: "Luna", size: 0.35, dist: 3.0, speed: 0.05, color: 0xdddddd, fact: "Earth's only natural satellite, responsible for the tides." }], rough: 0.6, fact: "The only place we know of so far that's inhabited by living things.", comp: "Our home world." },
+            { name: "Mars", a: 17, e: 0.093, w: 5.00, M0: 0.33, periodDays: 686.98, type: "Terrestrial", color: 0xc1440e, size: 0.53, moons: [{ name: "Phobos", size: 0.2, dist: 2.0, speed: 0.08, color: 0x887766, fact: "Gradually spiraling closer to Mars." }, { name: "Deimos", size: 0.15, dist: 2.8, speed: 0.06, color: 0x998877, fact: "The smaller and outermost moon of Mars." }], rough: 0.8, fact: "A dusty, cold, desert world with a very thin atmosphere.", comp: "About half the size of Earth." },
+            { name: "Jupiter", a: 28, e: 0.048, w: 0.25, M0: 0.35, periodDays: 4332.59, type: "Gas Giant", color: 0xd6a57e, size: 3.0, rings: { inner: 3.5, outer: 4.5, color: 0xaa9988, opacity: 0.3 }, moons: [{ name: "Io", size: 0.35, dist: 6.0, speed: 0.08, color: 0xddccaa, fact: "The most volcanically active body in the Solar System." }, { name: "Europa", size: 0.3, dist: 7.0, speed: 0.06, color: 0xaaccff, fact: "Thought to have a massive subsurface ocean." }, { name: "Ganymede", size: 0.4, dist: 8.5, speed: 0.04, color: 0xaabbcc, fact: "The largest moon in the Solar System." }, { name: "Callisto", size: 0.35, dist: 10.0, speed: 0.03, color: 0x999999, fact: "The most heavily cratered object in the Solar System." }], rough: 0.3, fact: "More than twice as massive as all the other planets combined.", comp: "11 Earths could fit across Jupiter's equator." },
+            { name: "Saturn", a: 42, e: 0.054, w: 1.61, M0: 5.54, periodDays: 10759.22, type: "Gas Giant", color: 0xf4d03f, size: 2.5, rings: { inner: 3.0, outer: 6.5, color: 0xddccaa, opacity: 0.8 }, moons: [{ name: "Titan", size: 0.4, dist: 9.0, speed: 0.05, color: 0xddaa55, fact: "Has a thick atmosphere and liquid methane lakes." }, { name: "Enceladus", size: 0.2, dist: 11.0, speed: 0.09, color: 0xffffff, fact: "Sprays icy plumes from a global subsurface ocean." }], rough: 0.3, fact: "Adorned with a dazzling, complex system of icy rings.", comp: "9 Earths could fit across Saturn's equator." },
+            { name: "Uranus", a: 56, e: 0.047, w: 2.98, M0: 2.48, periodDays: 30685.4, type: "Ice Giant", color: 0x9bd7d5, size: 1.8, rings: { inner: 2.2, outer: 3.2, color: 0xffffff, opacity: 0.2 }, moons: [{ name: "Titania", size: 0.3, dist: 5.0, speed: 0.06, color: 0xaaaaaa, fact: "The largest of the moons of Uranus." }], rough: 0.2, fact: "Rotates at a nearly 90-degree angle from the plane of its orbit.", comp: "4 Earths could fit across Uranus' equator." },
+            { name: "Neptune", a: 70, e: 0.009, w: 0.78, M0: 4.65, periodDays: 60189.0, type: "Ice Giant", color: 0x3e54e8, size: 1.7, moons: [{ name: "Triton", size: 0.3, dist: 5.0, speed: 0.07, color: 0xaaffdd, fact: "Orbits in the opposite direction of Neptune's rotation." }], rough: 0.2, fact: "Dark, cold, and whipped by supersonic winds.", comp: "Slightly smaller than Uranus." }
         ];
 
         const textureUrls = {
@@ -378,13 +388,22 @@
             "Jupiter": "https://cdn.jsdelivr.net/gh/joshuaenrico/solar-system-threejs@master/src/assets/textures/jupiter.jpg",
             "Saturn": "https://cdn.jsdelivr.net/gh/joshuaenrico/solar-system-threejs@master/src/assets/textures/saturn.jpg",
             "Uranus": "https://cdn.jsdelivr.net/gh/joshuaenrico/solar-system-threejs@master/src/assets/textures/uranus.jpg",
-            "Neptune": "https://cdn.jsdelivr.net/gh/joshuaenrico/solar-system-threejs@master/src/assets/textures/neptune.jpg"
+            "Neptune": "https://cdn.jsdelivr.net/gh/joshuaenrico/solar-system-threejs@master/src/assets/textures/neptune.jpg",
+            "Luna": "https://cdn.jsdelivr.net/gh/joshuaenrico/solar-system-threejs@master/src/assets/textures/moon.jpg"
         };
 
         // ============================================================================
-        // GLOBAL FUNCTIONS
+        // 2. HELPER FUNCTIONS
         // ============================================================================
         
+        function triggerFlash(turnWhite, duration = 300) {
+            const overlay = document.getElementById('flash-overlay');
+            if (overlay) {
+                overlay.style.transition = `opacity ${duration}ms cubic-bezier(0.25, 1, 0.5, 1)`;
+                overlay.style.opacity = turnWhite ? '1' : '0';
+            }
+        }
+
         function loadTextureWithFallback(name, type, colorHex, pMat) {
             if (textureUrls[name]) {
                 textureLoader.load(textureUrls[name], 
@@ -411,9 +430,9 @@
                     ctx.fillRect(0, y, 512, Math.random() * 15 + 2);
                 }
             } else {
-                for(let i=0; i<1000; i++) {
-                    ctx.fillStyle = (name==="Earth" && i<700) ? 'rgba(34, 139, 34, 0.6)' : `rgba(0,0,0,${Math.random()*0.2})`;
-                    ctx.beginPath(); ctx.arc(Math.random()*512, Math.random()*256, Math.random()*3+1, 0, Math.PI*2); ctx.fill();
+                for(let i=0; i<2000; i++) {
+                    ctx.fillStyle = (name==="Earth" && i<900) ? 'rgba(34, 139, 34, 0.6)' : `rgba(0,0,0,${Math.random()*0.4})`;
+                    ctx.beginPath(); ctx.arc(Math.random()*512, Math.random()*256, Math.random()*2+1, 0, Math.PI*2); ctx.fill();
                 }
             }
             const texture = new THREE.CanvasTexture(canvas);
@@ -461,20 +480,25 @@
             const canvas = document.createElement('canvas');
             canvas.width = 128; canvas.height = 128;
             const ctx = canvas.getContext('2d');
+            
             const r = (colorHex >> 16) & 255;
             const g = (colorHex >> 8) & 255;
             const b = colorHex & 255;
+
             const grad = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
             grad.addColorStop(0, `rgba(255, 255, 255, 1)`);
             grad.addColorStop(0.1, `rgba(${r}, ${g}, ${b}, 0.8)`);
             grad.addColorStop(0.4, `rgba(${r}, ${g}, ${b}, 0.3)`);
             grad.addColorStop(1, `rgba(0, 0, 0, 0)`);
+            
             ctx.fillStyle = grad;
             ctx.fillRect(0, 0, 128, 128);
+
             ctx.fillStyle = 'rgba(255,255,255,0.8)';
             ctx.beginPath();
             ctx.arc(64, 64, 4, 0, Math.PI*2);
             ctx.fill();
+
             return new THREE.CanvasTexture(canvas);
         }
 
@@ -602,66 +626,61 @@
             cinematicGroup.add(bigBangParticles);
         }
 
-        function onMouseClick(event) {
+        // --- Bulletproof Raycasting ---
+        function getClientX(e) { return (e.clientX !== undefined) ? e.clientX : (e.changedTouches ? e.changedTouches[0].clientX : 0); }
+        function getClientY(e) { return (e.clientY !== undefined) ? e.clientY : (e.changedTouches ? e.changedTouches[0].clientY : 0); }
+
+        function onPointerDown(event) {
+            pointerDownPos.set(getClientX(event), getClientY(event));
+        }
+
+        function onPointerUp(event) {
             if (!camera || isIntroPlaying) return;
             if (event.target.tagName === 'BUTTON' || event.target.tagName === 'INPUT' || event.target.closest('.panel') || event.target.closest('.dialog')) return;
 
-            let clientX = event.touches ? event.touches[0].clientX : event.clientX;
-            let clientY = event.touches ? event.touches[0].clientY : event.clientY;
+            const cx = getClientX(event);
+            const cy = getClientY(event);
+            const dist = Math.abs(cx - pointerDownPos.x) + Math.abs(cy - pointerDownPos.y);
+            if (dist > 5) return; // Prevent drag clicks
 
-            mouse.x = (clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(clientY / window.innerHeight) * 2 + 1;
+            mouse.x = (cx / window.innerWidth) * 2 - 1;
+            mouse.y = -(cy / window.innerHeight) * 2 + 1;
 
             raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects(interactableObjects, false); 
+            
+            // STRICT TARGETING: Only intersect objects explicitly tagged as interactable
+            const intersects = raycaster.intersectObjects(interactableObjects, true); 
 
-            if (currentSatMesh) {
-                let clickedStation = false;
-                for (let i = 0; i < intersects.length; i++) {
-                    let obj = intersects[i].object;
-                    while (obj) {
-                        if (obj.userData && obj.userData.isSatellite) {
+            if (intersects.length > 0) {
+                let obj = intersects[0].object;
+
+                if (currentSatMesh) {
+                    let currentObj = obj;
+                    let clickedStation = false;
+                    while (currentObj) {
+                        if (currentObj.userData && currentObj.userData.isSatellite) {
                             clickedStation = true;
                             break;
                         }
-                        obj = obj.parent;
+                        currentObj = currentObj.parent;
                     }
-                    if (clickedStation) break;
-                }
-
-                if (clickedStation) {
-                    const satMenu = document.getElementById('sat-control-menu');
-                    satMenu.style.display = (satMenu.style.display === 'block') ? 'none' : 'block';
-                }
-                return; 
-            }
-
-            if (intersects.length > 0) {
-                let selectedObj = null;
-
-                for (let i = 0; i < intersects.length; i++) {
-                    let obj = intersects[i].object;
-                    while (obj && (!obj.userData || !obj.userData.isTarget)) {
-                        obj = obj.parent;
-                    }
-                    
-                    if (obj && obj.userData && obj.userData.isTarget) {
-                        if (cameraContext === 'neo_scan') {
-                            if (obj.userData.type === "Asteroid / NEO" || obj.userData.type === "DANGER: INBOUND" || obj.userData.type === "Comet / NEO") {
-                                selectedObj = obj; break;
-                            }
-                        } else {
-                            if (obj.userData.name === "The Sun") {
-                                if (!selectedObj) selectedObj = obj;
-                            } else {
-                                selectedObj = obj; break; 
-                            }
-                        }
+                    if (clickedStation) {
+                        const satMenu = document.getElementById('sat-control-menu');
+                        satMenu.style.display = (satMenu.style.display === 'block') ? 'none' : 'block';
+                        return; 
                     }
                 }
 
-                if (selectedObj) focusOnTarget(selectedObj);
-                else unfocusTarget();
+                let targetObj = obj;
+                while (targetObj && (!targetObj.userData || !targetObj.userData.isTarget)) {
+                    targetObj = targetObj.parent;
+                }
+                
+                if (targetObj && targetObj.userData && targetObj.userData.isTarget) {
+                    focusOnTarget(targetObj);
+                } else {
+                    unfocusTarget();
+                }
             } else {
                 unfocusTarget();
             }
@@ -715,7 +734,7 @@
             const offset = new THREE.Vector3(size * 4, size * 2, size * 4);
             const idealPos = targetPos.clone().add(offset);
 
-            if (window.TWEEN) {
+            if (typeof window !== 'undefined' && window.TWEEN) {
                 new TWEEN.Tween(camera.position).to({ x: idealPos.x, y: idealPos.y, z: idealPos.z }, 1000).easing(TWEEN.Easing.Quadratic.Out).start();
                 new TWEEN.Tween(controls.target).to({ x: targetPos.x, y: targetPos.y, z: targetPos.z }, 1000).easing(TWEEN.Easing.Quadratic.Out).start();
             }
@@ -732,7 +751,7 @@
             if (cameraContext === 'neo_scan' && planetMeshes.length > 2) {
                 const earthPos = new THREE.Vector3();
                 planetMeshes[2].getWorldPosition(earthPos);
-                if (window.TWEEN) {
+                if (typeof window !== 'undefined' && window.TWEEN) {
                     new TWEEN.Tween(camera.position).to({ 
                         x: earthPos.x + currentNeoViewRadius, 
                         y: earthPos.y + (currentNeoViewRadius * 0.7), 
@@ -745,7 +764,7 @@
                     }, 1200).easing(TWEEN.Easing.Cubic.Out).start();
                 }
             } else {
-                if (window.TWEEN) {
+                if (typeof window !== 'undefined' && window.TWEEN) {
                     new TWEEN.Tween(camera.position).to({ x: 0, y: 50, z: 80 }, 1200).easing(TWEEN.Easing.Cubic.Out).start();
                     new TWEEN.Tween(controls.target).to({ x: 0, y: 0, z: 0 }, 1200).easing(TWEEN.Easing.Cubic.Out).start();
                 }
@@ -762,11 +781,11 @@
             document.getElementById('results-dialog').style.display = 'none';
             document.getElementById('details-dialog').style.display = 'none';
             
-            document.getElementById('sync-status').innerHTML = isPlaying ? "● Playing" : "● Real-time Mode";
+            document.getElementById('sync-status').innerHTML = isPlaying ? "● Playing" : "● Paused";
             document.getElementById('sync-status').style.color = isPlaying ? "#00ffcc" : "#ffcc00";
 
-            if (satOrbitGroup && solarSystemGroup) {
-                solarSystemGroup.remove(satOrbitGroup);
+            if (satOrbitGroup && planetMeshes.length > 2) {
+                planetMeshes[2].remove(satOrbitGroup);
                 satOrbitGroup = null;
             }
             if (currentSatMesh) {
@@ -775,7 +794,9 @@
             }
             issTrailPoints = [];
             if (issTrailLine) {
-                solarSystemGroup.remove(issTrailLine);
+                if (issTrailLine.parent) issTrailLine.parent.remove(issTrailLine);
+                if (issTrailLine.geometry) issTrailLine.geometry.dispose();
+                if (issTrailLine.material) issTrailLine.material.dispose();
                 issTrailLine = null;
             }
             isTrailActive = false;
@@ -787,7 +808,7 @@
             focusedTarget = null;
             clearTrackedObjects();
             
-            if (window.TWEEN) {
+            if (typeof window !== 'undefined' && window.TWEEN) {
                 new TWEEN.Tween(camera.position).to({ x: 0, y: 50, z: 80 }, 1500).easing(TWEEN.Easing.Cubic.InOut).start();
                 new TWEEN.Tween(controls.target).to({ x: 0, y: 0, z: 0 }, 1500).easing(TWEEN.Easing.Cubic.InOut).start();
             }
@@ -805,7 +826,7 @@
         window.togglePlay = function() {
             isPlaying = !isPlaying;
             document.getElementById('play-pause-btn').innerText = isPlaying ? "PAUSE MOVEMENT" : "PLAY MOVEMENT";
-            document.getElementById('sync-status').innerText = isPlaying ? "● Playing" : "● Real-time Mode";
+            document.getElementById('sync-status').innerText = isPlaying ? "● Playing" : "● Paused";
             document.getElementById('sync-status').style.color = isPlaying ? "#00ffcc" : "#ffcc00";
             lastTime = Date.now();
         }
@@ -823,7 +844,7 @@
 
         window.resetToRealTime = function() {
             accumulatedTimeDays = 0;
-            document.getElementById('sync-status').innerText = "● Real-time Mode";
+            document.getElementById('sync-status').innerText = "● Paused";
         }
 
         function updateDynamicTrail(obj, localPos, colorHex, isPlanet) {
@@ -971,7 +992,7 @@
             interactableObjects.push(meteorGroup);
 
             const travelTime = 8000;
-            if (window.TWEEN) {
+            if (typeof window !== 'undefined' && window.TWEEN) {
                 new TWEEN.Tween(meteorGroup.position).to({ x: earthMesh.position.x, y: earthMesh.position.y, z: earthMesh.position.z }, travelTime)
                     .easing(TWEEN.Easing.Quadratic.In)
                     .onUpdate(() => { if (meteorGroup) meteorGroup.lookAt(earthMesh.position); if (rock) { rock.rotation.x += 0.1; rock.rotation.z += 0.1; } })
@@ -995,47 +1016,21 @@
         };
 
         async function fetchWithFallback(targetUrl) {
-            let localProxyUrl = null;
             try {
-                if (targetUrl.includes('cad.api')) {
-                    const urlParams = new URLSearchParams(targetUrl.split('?')[1]);
-                    const distVal = urlParams.get('dist-max') || urlParams.get('dist');
-                    const limitVal = urlParams.get('limit') || 5;
-                    localProxyUrl = `/api/proxy?dist=${encodeURIComponent(distVal)}&limit=${encodeURIComponent(limitVal)}`;
-                } else if (targetUrl.includes('sbdb.api')) {
-                    const urlParams = new URLSearchParams(targetUrl.split('?')[1]);
-                    const desVal = urlParams.get('sstr');
-                    localProxyUrl = `/api/proxy?des=${encodeURIComponent(desVal)}`;
-                }
-
-                if (localProxyUrl) {
-                    const response = await fetch(localProxyUrl);
-                    if (response.ok) {
-                        const data = await response.json();
-                        if (data && (data.data || data.object || data.signature)) {
-                            data.simulated = false;
-                            return data;
-                        }
-                    }
-                }
-            } catch (e) {}
-
-            try {
-                const response = await fetch(targetUrl);
+                const response = await fetch(targetUrl, { method: 'GET', mode: 'cors' });
                 if (response.ok) {
                     const data = await response.json();
-                    if (data && (data.data || data.object || data.signature)) {
+                    if (data) {
                         data.simulated = false;
                         return data; 
                     }
                 }
-            } catch (e) {}
+            } catch (e) { } 
             
             const PROXIES = [
                 `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
-                `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`,
-                `https://corsproxy.io/?url=${encodeURIComponent(targetUrl)}`,
-                `https://thingproxy.freeboard.io/fetch/${targetUrl}`
+                `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`,
+                `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`
             ];
             
             for (let p = 0; p < PROXIES.length; p++) {
@@ -1043,20 +1038,17 @@
                     const response = await fetch(PROXIES[p]);
                     if (response.ok) {
                         const text = await response.text();
-                        try {
-                            const data = JSON.parse(text);
-                            if (data && (data.data || data.object || data.signature)) {
-                                data.simulated = false;
-                                return data;
-                            }
-                            if (data && data.contents) {
-                                const parsedContents = JSON.parse(data.contents);
-                                if (parsedContents && (parsedContents.data || parsedContents.object || parsedContents.signature)) {
-                                    parsedContents.simulated = false;
-                                    return parsedContents;
-                                }
-                            }
-                        } catch(err) { continue; }
+                        const data = JSON.parse(text);
+                        
+                        if (data && data.contents) {
+                            const parsed = JSON.parse(data.contents);
+                            parsed.simulated = false;
+                            return parsed;
+                        }
+                        if (data) {
+                            data.simulated = false;
+                            return data;
+                        }
                     }
                 } catch (e) { continue; }
             }
@@ -1084,7 +1076,8 @@
                     orbit: { elements: [{name: 'a', value: (Math.random()*2+1).toString()}, {name: 'e', value: (Math.random()*0.5+0.2).toString()}] } 
                 };
             }
-            throw new Error("API unreachable.");
+            
+            return { simulated: true, data: [] };
         }
 
         async function updateDailyDatabase() {
@@ -1116,7 +1109,7 @@
             if (trackedMeshes) {
                 trackedMeshes.forEach(obj => {
                     solarSystemGroup.remove(obj.group);
-                    if (obj.mesh.userData.trailLine) {
+                    if (obj.mesh && obj.mesh.userData && obj.mesh.userData.trailLine) {
                         solarSystemGroup.remove(obj.mesh.userData.trailLine);
                         obj.mesh.userData.trailLine.geometry.dispose();
                         obj.mesh.userData.trailLine.material.dispose();
@@ -1217,7 +1210,6 @@
                     await new Promise(r => setTimeout(r, 1200)); 
                     loadingDialog.style.display = 'none';
 
-                    if (!isPlaying) togglePlay(); 
                     focusOnTarget(newMesh); 
 
                 } else {
@@ -1272,10 +1264,8 @@
 
                     cameraContext = 'neo_scan';
                     currentNeoViewRadius = Math.max(parseFloat(dist) * 13 * 1.8, 18); 
-                    
-                    if (!isPlaying) togglePlay(); 
 
-                    if (window.TWEEN) {
+                    if (typeof window !== 'undefined' && window.TWEEN) {
                         new TWEEN.Tween(camera.position)
                             .to({ x: earthPos.x + currentNeoViewRadius, y: earthPos.y + (currentNeoViewRadius * 0.7), z: earthPos.z + currentNeoViewRadius }, 2500)
                             .easing(TWEEN.Easing.Cubic.InOut).start();
@@ -1298,6 +1288,7 @@
             }
         };
 
+        // --- Space Station Tracker ---
         window.openSatTracker = function() {
             if(isPlaying) togglePlay(); 
             document.getElementById('sat-dialog').style.display = 'block';
@@ -1355,15 +1346,16 @@
 
         window.closeSatTracker = function() {
             document.getElementById('sat-dialog').style.display = 'none';
-            if (satOrbitGroup && solarSystemGroup) {
-                solarSystemGroup.remove(satOrbitGroup);
+            if (satOrbitGroup && planetMeshes.length > 2) {
+                planetMeshes[2].remove(satOrbitGroup);
+                satOrbitGroup = null;
             }
             if (currentSatMesh) {
                 interactableObjects = interactableObjects.filter(o => o.userData && !o.userData.isSatellite);
                 currentSatMesh = null;
             }
-            if (issTrailLine && solarSystemGroup) {
-                solarSystemGroup.remove(issTrailLine);
+            if (issTrailLine) {
+                if (issTrailLine.parent) issTrailLine.parent.remove(issTrailLine);
                 if (issTrailLine.geometry) issTrailLine.geometry.dispose();
                 if (issTrailLine.material) issTrailLine.material.dispose();
                 issTrailLine = null;
@@ -1470,8 +1462,8 @@
             document.getElementById('menu-main').style.display = 'none';
             document.getElementById('sat-control-menu').style.display = 'block';
 
-            if (satOrbitGroup && solarSystemGroup) {
-                solarSystemGroup.remove(satOrbitGroup);
+            if (satOrbitGroup && planetMeshes.length > 2) {
+                planetMeshes[2].remove(satOrbitGroup);
             }
             issTrailPoints = [];
             isTrailActive = false;
@@ -1483,12 +1475,35 @@
             satOrbitGroup = new THREE.Group();
             satOrbitGroup.rotation.order = 'YXZ';
             satOrbitGroup.rotation.x = activeSatConfig.inc * (Math.PI / 180);
-            solarSystemGroup.children.find(c => c.userData && c.userData.name === 'Earth').add(satOrbitGroup); 
+            planetMeshes[2].add(satOrbitGroup); 
             
-            currentSatMesh = createSatMesh(activeSatConfig.id);
+            const group = new THREE.Group();
+            if (activeSatConfig.id === 'hst') {
+                const hull = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.08, 16), new THREE.MeshStandardMaterial({color: 0xaaaaaa, metalness: 0.9}));
+                hull.rotation.z = Math.PI / 2; group.add(hull);
+                const lid = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.02, 16), new THREE.MeshStandardMaterial({color: 0x222222}));
+                lid.position.x = 0.04; lid.rotation.z = Math.PI / 2; group.add(lid);
+                const pMat = new THREE.MeshStandardMaterial({color: 0x113388, metalness: 0.5});
+                const p1 = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.005, 0.06), pMat); p1.position.set(0, 0.02, 0); group.add(p1);
+                const p2 = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.005, 0.06), pMat); p2.position.set(0, -0.02, 0); group.add(p2);
+            } else if (activeSatConfig.id === 'css') {
+                const hull = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.08, 16), new THREE.MeshStandardMaterial({color: 0xdddddd, metalness: 0.8}));
+                hull.rotation.z = Math.PI / 2; group.add(hull);
+                const pMat = new THREE.MeshStandardMaterial({color: 0x113388});
+                const p1 = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.01, 0.12), pMat); p1.position.set(0.02, 0.02, 0); group.add(p1);
+                const p2 = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.01, 0.12), pMat); p2.position.set(-0.02, 0.02, 0); group.add(p2);
+            } else { 
+                const hull = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.1, 16), new THREE.MeshStandardMaterial({color: 0xdddddd, metalness: 0.8}));
+                hull.rotation.z = Math.PI / 2; group.add(hull);
+                const pMat = new THREE.MeshStandardMaterial({color: 0x113388, metalness: 0.5, roughness: 0.2});
+                const p1 = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.01, 0.15), pMat); p1.position.set(0.04, 0.02, 0); group.add(p1);
+                const p2 = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.01, 0.15), pMat); p2.position.set(-0.04, 0.02, 0); group.add(p2);
+            }
+            currentSatMesh = group;
+
             currentSatMesh.userData = { isSatellite: true, name: activeSatConfig.name };
-            
             satOrbitGroup.add(currentSatMesh); 
+            interactableObjects.push(currentSatMesh); 
             
             isCameraLockedToSat = true;
 
@@ -1498,7 +1513,7 @@
             const midCamPos = camera.position.clone().lerp(earthPos, 0.5);
             midCamPos.y += 15; 
             
-            if (window.TWEEN) {
+            if (typeof window !== 'undefined' && window.TWEEN) {
                 new TWEEN.Tween(camera.position).to({ x: midCamPos.x, y: midCamPos.y, z: midCamPos.z }, 1000).easing(TWEEN.Easing.Quadratic.Out)
                     .onComplete(() => {
                         const camDist = 2.5; 
@@ -1565,7 +1580,7 @@
             satOrbitGroup.add(scannerGroup);
 
             scannerData = { offset: 0 };
-            if (window.TWEEN) {
+            if (typeof window !== 'undefined' && window.TWEEN) {
                 new TWEEN.Tween(scannerData)
                     .to({ offset: Math.PI * 2 }, 2200) 
                     .easing(TWEEN.Easing.Quadratic.InOut)
@@ -1609,162 +1624,152 @@
             `;
         };
 
-        function updatePlanets() {
-            let delta = 0;
-            const now = Date.now();
-            if (isPlaying) {
-                delta = (now - lastTime) / 1000;
-                accumulatedTimeDays += delta * 15; 
-            }
-            lastTime = now;
+        window.forceEndCinematic = function() {
+            const overlay = document.getElementById('flash-overlay');
+            const intro = document.getElementById('nolasco-intro');
+            if (overlay) overlay.style.opacity = '0';
+            if (intro) intro.style.display = 'none';
             
-            const J2000_MS = 946728000000;
-            const daysSinceJ2000 = ((now - J2000_MS) / 86400000) + accumulatedTimeDays;
+            endCinematicState();
+        }
 
-            if (beltGroup && isPlaying) {
-                beltGroup.rotation.y += delta * 0.05; 
+        function endCinematicState() {
+            isIntroPlaying = false;
+            
+            if (camera) camera.position.set(0, 50, 80);
+            if (controls) {
+                controls.enabled = true;
+                controls.target.set(0, 0, 0);
+                controls.update();
             }
+            if (camera) {
+                camera.fov = 60;
+                camera.updateProjectionMatrix();
+            }
+            
+            const ui = document.getElementById('ui-container');
+            if (ui) {
+                ui.style.opacity = '1';
+                ui.style.pointerEvents = 'auto';
+            }
+            const syncStatus = document.getElementById('sync-status');
+            if (syncStatus) syncStatus.style.opacity = '1';
+            
+            const skipBtn = document.getElementById('skip-intro-btn');
+            if (skipBtn) skipBtn.style.display = 'none';
 
-            planetMeshes.forEach((planetObj, index) => {
-                const p = planetConfigs[index];
-                
-                const M = p.M0 + (2 * Math.PI * daysSinceJ2000 / p.periodDays);
-                const v = M + 2 * p.e * Math.sin(M) + 1.25 * p.e * p.e * Math.sin(2 * M);
-                const currentAngle = p.w + v;
-                
-                const r = p.a * (1 - p.e * p.e) / (1 + p.e * Math.cos(v));
+            if (milkyWayGroup) milkyWayGroup.visible = false;
+            if (deepFieldGroup) deepFieldGroup.visible = false;
+            if (solarSystemGroup) {
+                solarSystemGroup.visible = true;
+                solarSystemGroup.scale.set(1, 1, 1);
+            }
+            if (cinematicGroup && scene) scene.remove(cinematicGroup); 
+        }
 
-                planetObj.position.x = r * Math.cos(currentAngle);
-                planetObj.position.z = r * Math.sin(currentAngle);
-                
-                updateDynamicTrail(planetObj, planetObj.position.clone(), p.color, true);
-                
-                if (isPlanetaryRotationOn) {
-                    planetObj.rotation.y += 0.01;
-                }
+        async function runCinematicIntro() {
+            const sleep = ms => new Promise(r => setTimeout(r, ms));
+            
+            await sleep(2500);
+            const intro = document.getElementById('nolasco-intro');
+            if (intro) intro.style.opacity = '0';
+            await sleep(500);
+            if (intro) intro.style.display = 'none';
+            if (!isIntroPlaying) return; 
 
-                if (planetObj.userData.moonsGroup) {
-                    let moonDataIndex = 0;
-                    planetObj.userData.moonsGroup.children.forEach((child) => {
-                        if(child.userData && child.userData.type === "Moon") {
-                            const mData = p.moons[moonDataIndex];
-                            if(mData) {
-                                const mAngle = daysSinceJ2000 * mData.speed * 10 + moonDataIndex;
-                                child.position.x = mData.dist * Math.cos(mAngle);
-                                child.position.z = mData.dist * Math.sin(mAngle);
-                                
-                                if (isPlanetaryRotationOn) {
-                                    child.rotation.y += 0.02;
-                                }
-                            }
-                            moonDataIndex++;
-                        }
-                    });
+            triggerFlash(true, 100);
+            await sleep(150);
+            if (!isIntroPlaying) return;
+
+            isExpanding = true;
+            deepFieldGalaxies.forEach(sprite => {
+                if(typeof window !== 'undefined' && window.TWEEN) {
+                    new TWEEN.Tween(sprite.position)
+                        .to({ x: sprite.userData.targetX, y: sprite.userData.targetY, z: sprite.userData.targetZ }, 2000)
+                        .easing(TWEEN.Easing.Cubic.Out).start();
                 }
             });
 
-            trackedMeshes.forEach(obj => {
-                const mesh = obj.mesh;
-                const config = mesh.userData.orbitConfig;
-                if (!config) return;
-
-                const currentAngle = config.initialAngle + (accumulatedTimeDays * config.v);
-                const r = config.a * (1 - config.e * config.e) / (1 + config.e * Math.cos(currentAngle));
-                mesh.position.set(r * Math.cos(currentAngle), 0, r * Math.sin(currentAngle));
-
-                updateDynamicTrail(mesh, mesh.position.clone(), mesh.userData.color, false);
-            });
-
-            if (satOrbitGroup && currentSatMesh) {
-                const timeFactor = Date.now() / 1000;
-                const periodSec = activeSatConfig.period * 60;
-                const phase = (timeFactor % periodSec) / periodSec;
-                const phaseAngle = phase * Math.PI * 2;
-                
-                const r = 1.12; 
-                
-                currentSatMesh.position.set(r * Math.cos(phaseAngle), 0, r * Math.sin(phaseAngle));
-                currentSatMesh.lookAt(new THREE.Vector3(r * Math.cos(phaseAngle + 0.1), 0, r * Math.sin(phaseAngle + 0.1)));
-
-                const earthRotationOffset = (timeFactor % 86400) / 86400 * Math.PI * 2;
-                satOrbitGroup.rotation.y = -earthRotationOffset;
-
-                let trailSourcePos = currentSatMesh.position.clone();
-
-                if (scannerData) {
-                    scannerArrows.forEach((reticle) => {
-                        const angle = phaseAngle + scannerData.offset;
-                        reticle.position.set(r * Math.cos(angle), 0, r * Math.sin(angle));
-                        reticle.lookAt(new THREE.Vector3(r * Math.cos(angle + 0.1), 0, r * Math.sin(angle + 0.1)));
-                        
-                        reticle.children[0].rotation.y += 0.2;     
-                        reticle.children[1].rotation.z -= 0.15;   
-                        reticle.children[2].rotation.z += 0.1;    
-                    });
-                    
-                    trailSourcePos = scannerArrows[0].position.clone();
-                }
-
-                if (isTrailActive) {
-                    if (issTrailPoints.length === 0 || issTrailPoints[issTrailPoints.length - 1].distanceTo(trailSourcePos) > 0.015) {
-                        issTrailPoints.push(trailSourcePos);
-                        if (issTrailPoints.length > 200) issTrailPoints.shift();
-                        
-                        if (!issTrailLine) {
-                            const geo = new THREE.BufferGeometry().setFromPoints(issTrailPoints);
-                            const colors = new Float32Array(issTrailPoints.length * 3);
-                            geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-                            
-                            const mat = new THREE.PointsMaterial({ 
-                                size: 0.1, 
-                                map: glowTexCache, 
-                                transparent: true, 
-                                blending: THREE.AdditiveBlending,
-                                vertexColors: true,
-                                depthWrite: false
-                            });
-                            issTrailLine = new THREE.Points(geo, mat);
-                            satOrbitGroup.add(issTrailLine); 
-                        } else {
-                            issTrailLine.geometry.setFromPoints(issTrailPoints);
-                            
-                            const positions = issTrailLine.geometry.attributes.position;
-                            const colors = new Float32Array(positions.count * 3);
-                            const baseColor = new THREE.Color(activeSatConfig.color);
-                            
-                            for(let i=0; i<positions.count; i++) {
-                                const ratio = Math.pow(i / positions.count, 2); 
-                                colors[i*3] = baseColor.r * ratio;
-                                colors[i*3+1] = baseColor.g * ratio;
-                                colors[i*3+2] = baseColor.b * ratio;
-                            }
-                            issTrailLine.geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-                        }
-                    }
-                }
-
-                if (isCameraLockedToSat) {
-                    const globalSatPos = new THREE.Vector3();
-                    currentSatMesh.getWorldPosition(globalSatPos);
-                    controls.target.copy(globalSatPos);
-                }
-            }
+            triggerFlash(false, 1500); 
             
-            if (isExpanding && bigBangParticles) {
-                const positions = bigBangParticles.geometry.attributes.position.array;
-                for(let i=0; i<positions.length; i++) {
-                    positions[i] += bigBangVelocities[i];
-                }
-                bigBangParticles.geometry.attributes.position.needsUpdate = true;
+            if(typeof window !== 'undefined' && window.TWEEN) {
+                new TWEEN.Tween(camera.position).to({ z: 5200 }, 2000).easing(TWEEN.Easing.Quadratic.Out).start();
+            }
+            await sleep(2000); 
+            if (!isIntroPlaying) return;
+
+            const targetGal = deepFieldGalaxies[Math.floor(Math.random() * deepFieldGalaxies.length)];
+            if (typeof window !== 'undefined' && window.TWEEN) {
+                new TWEEN.Tween(cinematicLookAt).to({ x: targetGal.position.x, y: targetGal.position.y, z: targetGal.position.z }, 1000)
+                    .easing(TWEEN.Easing.Cubic.InOut).start();
+                await sleep(1000);
+                if (!isIntroPlaying) return;
+
+                new TWEEN.Tween(camera).to({ fov: 160 }, 800).easing(TWEEN.Easing.Exponential.In).onUpdate(()=>camera.updateProjectionMatrix()).start();
+                new TWEEN.Tween(camera.position).to({ x: targetGal.position.x, y: targetGal.position.y, z: targetGal.position.z + 100 }, 800).easing(TWEEN.Easing.Exponential.In).start();
+                await sleep(800);
+                if (!isIntroPlaying) return;
                 
-                if (milkyWayGroup) {
-                    milkyWayGroup.rotation.y += 0.005; 
-                    milkyWayGroup.rotation.z += 0.001;
-                }
+                triggerFlash(true, 100);
+                await sleep(150);
+                if (!isIntroPlaying) return;
+
+                deepFieldGroup.visible = false;
+                if(bigBangFlash) cinematicGroup.remove(bigBangFlash);
+                if(bigBangParticles) cinematicGroup.remove(bigBangParticles);
+                milkyWayGroup.visible = true;
+                
+                camera.fov = 60; camera.updateProjectionMatrix();
+                
+                camera.position.set(0, 1800, 2800);
+                cinematicLookAt.set(0, 0, 0); 
+                
+                triggerFlash(false, 1500);
+                
+                new TWEEN.Tween(camera.position).to({ x: 0, y: 800, z: 1500 }, 2500).easing(TWEEN.Easing.Linear.None).start();
+                await sleep(2500);
+                if (!isIntroPlaying) return;
+
+                const mwZones = [
+                    new THREE.Vector3(800, 50, 800),
+                    new THREE.Vector3(-800, 40, 800),
+                    new THREE.Vector3(800, -30, -800),
+                    new THREE.Vector3(-800, 60, -800)
+                ];
+                const zone = mwZones[Math.floor(Math.random() * mwZones.length)];
+                
+                new TWEEN.Tween(cinematicLookAt).to({ x: zone.x, y: zone.y, z: zone.z }, 1000).easing(TWEEN.Easing.Cubic.InOut).start();
+                await sleep(1000);
+                if (!isIntroPlaying) return;
+
+                new TWEEN.Tween(camera).to({ fov: 160 }, 1000).easing(TWEEN.Easing.Exponential.In).onUpdate(()=>camera.updateProjectionMatrix()).start();
+                new TWEEN.Tween(camera.position).to({ x: zone.x, y: zone.y + 100, z: zone.z + 200 }, 1000).easing(TWEEN.Easing.Exponential.In).start();
+                await sleep(1000);
+                if (!isIntroPlaying) return;
+
+                triggerFlash(true, 100);
+                await sleep(150);
+                if (!isIntroPlaying) return;
+
+                milkyWayGroup.visible = false;
+                solarSystemGroup.visible = true;
+                solarSystemGroup.scale.set(1, 1, 1);
+                camera.fov = 60; camera.updateProjectionMatrix();
+                camera.position.set(0, 600, 1000);
+                cinematicLookAt.set(0, 0, 0);
+                
+                triggerFlash(false, 1500);
+
+                new TWEEN.Tween(camera.position).to({ x: 0, y: 50, z: 80 }, 3000).easing(TWEEN.Easing.Cubic.Out).start();
+                await sleep(3000);
+                
+                endCinematicState();
+            } else {
+                endCinematicState();
             }
         }
 
-        // --- Core Engine Init ---
+        // --- Core Engine Initialization ---
         window.onload = function() {
             textureLoader = new THREE.TextureLoader();
             textureLoader.setCrossOrigin("Anonymous");
@@ -1791,7 +1796,9 @@
             controls.enableDamping = true;
             controls.dampingFactor = 0.05;
 
-            window.addEventListener('click', onMouseClick);
+            // SMART CLICK OVERRIDE
+            renderer.domElement.addEventListener('pointerdown', onPointerDown);
+            renderer.domElement.addEventListener('pointerup', onPointerUp);
             
             // --- MASSIVE HD STARFIELD ---
             const starGeo = new THREE.BufferGeometry();
@@ -1811,6 +1818,7 @@
             solarSystemGroup = new THREE.Group();
             scene.add(solarSystemGroup);
             solarSystemGroup.scale.set(0.001, 0.001, 0.001); 
+            solarSystemGroup.visible = false; 
 
             solarSystemGroup.add(new THREE.AmbientLight(0x222233, 1.5));
             const sunLight = new THREE.PointLight(0xffeedd, 3, 1500);
@@ -1820,7 +1828,7 @@
             const sunCore = new THREE.Mesh(new THREE.SphereGeometry(3, 64, 64), new THREE.MeshBasicMaterial({ color: 0xffddaa }));
             const sunGlow = new THREE.Mesh(new THREE.SphereGeometry(3.5, 32, 32), new THREE.MeshBasicMaterial({ color: 0xff8800, transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending }));
             
-            const sunData = { isTarget: true, name: "The Sun", type: "G-Type Star", a: 0, v: 0, moons: [], size: 3, color: 0xff8800 };
+            const sunData = { isTarget: true, name: "The Sun", type: "G-Type Yellow Dwarf Star", a: 0, v: 0, moons: [], size: 3, color: 0xff8800, fact: "The heart of our solar system. Its gravity holds everything together.", comp: "Accounts for 99.8% of the mass in the entire solar system." };
             sunCore.userData = sunData;
             sunGlow.userData = sunData;
             
@@ -1861,7 +1869,7 @@
 
                 const mesh = new THREE.Mesh(new THREE.SphereGeometry(p.size, 64, 64), pMat);
                 
-                const pData = { isTarget: true, name: p.name, type: p.type, a: p.a / 13, v: p.v, moons: p.moons, size: p.size, color: p.color };
+                const pData = { isTarget: true, name: p.name, type: p.type, a: p.a / 13, v: p.v, moons: p.moons, size: p.size, color: p.color, fact: p.fact, comp: p.comp };
                 mesh.userData = pData;
                 interactableObjects.push(mesh);
                 
@@ -1897,13 +1905,12 @@
                     const mColor = m.color || 0xcccccc;
                     const mTex = generatePlanetTexture(m.name, "Terrestrial", mColor);
                     
-                    const moonGeo = new THREE.IcosahedronGeometry(m.size, 2);
+                    const moonGeo = new THREE.SphereGeometry(m.size, 64, 64);
                     const moonMat = new THREE.MeshStandardMaterial({ 
                         map: mTex, 
                         roughness: 0.9,
-                        flatShading: true,
                         emissive: mColor,
-                        emissiveIntensity: 0.35 
+                        emissiveIntensity: 0.25 
                     });
                     const moonMesh = new THREE.Mesh(moonGeo, moonMat);
                     
@@ -1940,10 +1947,12 @@
             cinematicLookAt.set(0, 0, 4800);
             controls.enabled = false; 
 
+            // --- The Single Render Loop ---
             function animate(time) { 
                 requestAnimationFrame(animate); 
-                if (window.TWEEN) TWEEN.update(time); 
-                updatePlanets(); 
+                if (typeof window !== 'undefined' && window.TWEEN) TWEEN.update(time); 
+                
+                updatePlanetsFunc(); 
                 
                 if (focusedTarget && !isCameraLockedToSat) {
                     const targetPos = new THREE.Vector3();
@@ -1959,126 +1968,165 @@
                 
                 renderer.render(scene, camera); 
             }
-            animate();
             
-            updateDailyDatabase();
-
-            function triggerFlash(turnWhite, duration = 300) {
-                const overlay = document.getElementById('flash-overlay');
-                overlay.style.transition = `opacity ${duration}ms cubic-bezier(0.25, 1, 0.5, 1)`;
-                overlay.style.opacity = turnWhite ? '1' : '0';
-            }
-
-            // --- THE EPIC WARP TIMELINE ---
-            setTimeout(() => {
-                const intro = document.getElementById('nolasco-intro');
-                if (intro) intro.style.opacity = '0';
-            }, 3000);
-
-            setTimeout(() => {
-                triggerFlash(true, 100); 
+            function updatePlanetsFunc() {
+                let delta = 0;
+                const now = Date.now();
+                if (isPlaying) {
+                    delta = (now - lastTime) / 1000;
+                    accumulatedTimeDays += delta * 15; 
+                }
+                lastTime = now;
                 
-                setTimeout(() => {
-                    const intro = document.getElementById('nolasco-intro');
-                    if (intro) intro.style.display = 'none';
-                    
-                    isExpanding = true;
-                    
-                    deepFieldGalaxies.forEach(sprite => {
-                        if(window.TWEEN) {
-                            new TWEEN.Tween(sprite.position)
-                                .to({ x: sprite.userData.targetX, y: sprite.userData.targetY, z: sprite.userData.targetZ }, 3000)
-                                .easing(TWEEN.Easing.Cubic.Out).start();
-                        }
-                    });
+                const J2000_MS = 946728000000;
+                const daysSinceJ2000 = ((now - J2000_MS) / 86400000) + accumulatedTimeDays;
 
-                    triggerFlash(false, 1500); 
+                if (beltGroup && isPlaying) {
+                    beltGroup.rotation.y += delta * 0.05; 
+                }
+
+                planetMeshes.forEach((planetObj, index) => {
+                    const p = planetConfigs[index];
                     
-                    if(window.TWEEN) {
-                        new TWEEN.Tween(camera.position).to({ z: 5200 }, 3000).easing(TWEEN.Easing.Quadratic.Out).start();
+                    const M = p.M0 + (2 * Math.PI * daysSinceJ2000 / p.periodDays);
+                    const v = M + 2 * p.e * Math.sin(M) + 1.25 * p.e * p.e * Math.sin(2 * M);
+                    const currentAngle = p.w + v;
+                    
+                    const r = p.a * (1 - p.e * p.e) / (1 + p.e * Math.cos(v));
+
+                    planetObj.position.x = r * Math.cos(currentAngle);
+                    planetObj.position.z = r * Math.sin(currentAngle);
+                    
+                    updateDynamicTrail(planetObj, planetObj.position.clone(), p.color, true);
+                    
+                    if (isPlanetaryRotationOn) {
+                        planetObj.rotation.y += 0.01;
                     }
 
-                }, 150);
-            }, 3500);
+                    if (planetObj.userData.moonsGroup) {
+                        let moonDataIndex = 0;
+                        planetObj.userData.moonsGroup.children.forEach((child) => {
+                            if(child.userData && child.userData.type === "Moon") {
+                                const mData = p.moons[moonDataIndex];
+                                if(mData) {
+                                    const mAngle = daysSinceJ2000 * mData.speed * 10 + moonDataIndex;
+                                    child.position.x = mData.dist * Math.cos(mAngle);
+                                    child.position.z = mData.dist * Math.sin(mAngle);
+                                    
+                                    if (isPlanetaryRotationOn) {
+                                        child.rotation.y += 0.02;
+                                    }
+                                }
+                                moonDataIndex++;
+                            }
+                        });
+                    }
+                });
 
-            setTimeout(() => {
-                const targetGal = deepFieldGalaxies[Math.floor(Math.random() * deepFieldGalaxies.length)];
-                
-                if(window.TWEEN) {
-                    new TWEEN.Tween(cinematicLookAt).to({ x: targetGal.position.x, y: targetGal.position.y, z: targetGal.position.z }, 1000)
-                        .easing(TWEEN.Easing.Cubic.InOut).start();
+                trackedMeshes.forEach(obj => {
+                    const mesh = obj.mesh;
+                    const config = mesh.userData.orbitConfig;
+                    if (!config) return;
 
-                    setTimeout(() => {
-                        new TWEEN.Tween(camera).to({ fov: 150 }, 1000).easing(TWEEN.Easing.Exponential.In).onUpdate(()=>camera.updateProjectionMatrix()).start();
-                        new TWEEN.Tween(camera.position).to({ x: targetGal.position.x, y: targetGal.position.y, z: targetGal.position.z + 100 }, 1000).easing(TWEEN.Easing.Exponential.In).start();
-                        
-                        setTimeout(() => {
-                            triggerFlash(true, 100);
+                    const currentAngle = config.initialAngle + (accumulatedTimeDays * config.v);
+                    const r = config.a * (1 - config.e * config.e) / (1 + config.e * Math.cos(currentAngle));
+                    mesh.position.set(r * Math.cos(currentAngle), 0, r * Math.sin(currentAngle));
+
+                    updateDynamicTrail(mesh, mesh.position.clone(), mesh.userData.color, false);
+                });
+
+                if (satOrbitGroup && currentSatMesh) {
+                    const timeFactor = Date.now() / 1000;
+                    const periodSec = activeSatConfig.period * 60;
+                    const phase = (timeFactor % periodSec) / periodSec;
+                    const phaseAngle = phase * Math.PI * 2;
+                    
+                    const r = 1.12; 
+                    
+                    currentSatMesh.position.set(r * Math.cos(phaseAngle), 0, r * Math.sin(phaseAngle));
+                    currentSatMesh.lookAt(new THREE.Vector3(r * Math.cos(phaseAngle + 0.1), 0, r * Math.sin(phaseAngle + 0.1)));
+
+                    const earthRotationOffset = (timeFactor % 86400) / 86400 * Math.PI * 2;
+                    satOrbitGroup.rotation.y = -earthRotationOffset;
+
+                    let trailSourcePos = currentSatMesh.position.clone();
+
+                    if (scannerData) {
+                        scannerArrows.forEach((reticle) => {
+                            const angle = phaseAngle + scannerData.offset;
+                            reticle.position.set(r * Math.cos(angle), 0, r * Math.sin(angle));
+                            reticle.lookAt(new THREE.Vector3(r * Math.cos(angle + 0.1), 0, r * Math.sin(angle + 0.1)));
                             
-                            setTimeout(() => {
-                                deepFieldGroup.visible = false;
-                                milkyWayGroup.visible = true;
+                            reticle.children[0].rotation.y += 0.2;     
+                            reticle.children[1].rotation.z -= 0.15;   
+                            reticle.children[2].rotation.z += 0.1;    
+                        });
+                        
+                        trailSourcePos = scannerArrows[0].position.clone();
+                    }
+
+                    if (isTrailActive) {
+                        if (issTrailPoints.length === 0 || issTrailPoints[issTrailPoints.length - 1].distanceTo(trailSourcePos) > 0.015) {
+                            issTrailPoints.push(trailSourcePos);
+                            if (issTrailPoints.length > 200) issTrailPoints.shift();
+                            
+                            if (!issTrailLine) {
+                                const geo = new THREE.BufferGeometry().setFromPoints(issTrailPoints);
+                                const colors = new Float32Array(issTrailPoints.length * 3);
+                                geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
                                 
-                                camera.fov = 60; camera.updateProjectionMatrix();
-                                camera.position.set(0, 1000, 2000);
-                                cinematicLookAt.set(0, 0, 1000); 
+                                const mat = new THREE.PointsMaterial({ 
+                                    size: 0.1, 
+                                    map: glowTexCache, 
+                                    transparent: true, 
+                                    blending: THREE.AdditiveBlending,
+                                    vertexColors: true,
+                                    depthWrite: false
+                                });
+                                issTrailLine = new THREE.Points(geo, mat);
+                                satOrbitGroup.add(issTrailLine); 
+                            } else {
+                                issTrailLine.geometry.setFromPoints(issTrailPoints);
                                 
-                                triggerFlash(false, 1500);
+                                const positions = issTrailLine.geometry.attributes.position;
+                                const colors = new Float32Array(positions.count * 3);
+                                const baseColor = new THREE.Color(activeSatConfig.color);
+                                
+                                for(let i=0; i<positions.count; i++) {
+                                    const ratio = Math.pow(i / positions.count, 2); 
+                                    colors[i*3] = baseColor.r * ratio;
+                                    colors[i*3+1] = baseColor.g * ratio;
+                                    colors[i*3+2] = baseColor.b * ratio;
+                                }
+                                issTrailLine.geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+                            }
+                        }
+                    }
 
-                                new TWEEN.Tween(camera.position).to({ x: 0, y: 400, z: 1200 }, 3500).easing(TWEEN.Easing.Linear.None).start();
-
-                                setTimeout(() => {
-                                    const mwZones = [
-                                        new THREE.Vector3(300, 50, 1100),
-                                        new THREE.Vector3(-250, 40, 1200),
-                                        new THREE.Vector3(150, -30, 800),
-                                        new THREE.Vector3(-200, 60, 900)
-                                    ];
-                                    const zone = mwZones[Math.floor(Math.random() * mwZones.length)];
-
-                                    new TWEEN.Tween(cinematicLookAt).to({ x: zone.x, y: zone.y, z: zone.z }, 800).easing(TWEEN.Easing.Cubic.InOut).start();
-
-                                    setTimeout(() => {
-                                        new TWEEN.Tween(camera).to({ fov: 160 }, 1000).easing(TWEEN.Easing.Exponential.In).onUpdate(()=>camera.updateProjectionMatrix()).start();
-                                        new TWEEN.Tween(camera.position).to({ x: zone.x, y: zone.y, z: zone.z + 50 }, 1000).easing(TWEEN.Easing.Exponential.In).start();
-
-                                        setTimeout(() => {
-                                            triggerFlash(true, 100);
-                                            
-                                            setTimeout(() => {
-                                                milkyWayGroup.visible = false;
-                                                solarSystemGroup.visible = true;
-                                                solarSystemGroup.scale.set(1, 1, 1);
-                                                
-                                                camera.fov = 60; camera.updateProjectionMatrix();
-                                                camera.position.set(0, 800, 1200);
-                                                cinematicLookAt.set(0, 0, 0);
-                                                controls.target.set(0, 0, 0);
-                                                
-                                                triggerFlash(false, 1500);
-
-                                                setTimeout(() => {
-                                                    new TWEEN.Tween(camera.position).to({ x: 0, y: 50, z: 80 }, 3000).easing(TWEEN.Easing.Cubic.Out).start();
-                                                    
-                                                    setTimeout(() => {
-                                                        isIntroPlaying = false;
-                                                        controls.enabled = true;
-                                                        document.getElementById('ui-container').style.opacity = '1';
-                                                        document.getElementById('ui-container').style.pointerEvents = 'auto';
-                                                        document.getElementById('sync-status').style.opacity = '1';
-                                                        scene.remove(cinematicGroup); 
-                                                    }, 3000);
-                                                }, 1000);
-                                                
-                                            }, 150);
-                                        }, 1000); 
-                                    }, 800); 
-                                }, 3500); 
-                            }, 150);
-                        }, 1000); 
-                    }, 1000); 
+                    if (isCameraLockedToSat) {
+                        const globalSatPos = new THREE.Vector3();
+                        currentSatMesh.getWorldPosition(globalSatPos);
+                        controls.target.copy(globalSatPos);
+                    }
                 }
-            }, 6500); 
+                
+                if (isExpanding && bigBangParticles) {
+                    const positions = bigBangParticles.geometry.attributes.position.array;
+                    for(let i=0; i<positions.length; i++) {
+                        positions[i] += bigBangVelocities[i];
+                    }
+                    bigBangParticles.geometry.attributes.position.needsUpdate = true;
+                    
+                    if (milkyWayGroup) {
+                        milkyWayGroup.rotation.y += 0.005; 
+                        milkyWayGroup.rotation.z += 0.001;
+                    }
+                }
+            } 
+            
+            animate();
+            updateDailyDatabase();
+            runCinematicIntro();
         };
     </script>
 </body>
