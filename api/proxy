@@ -9,7 +9,7 @@ export default async function handler(req, res) {
         return res.status(200).end();
     }
 
-    const { des, dist, limit } = req.query;
+    const { des, dist, limit, horizons } = req.query;
     
     // Determine which NASA endpoint to call
     let baseUrl = "https://ssd-api.jpl.nasa.gov/";
@@ -21,12 +21,15 @@ export default async function handler(req, res) {
     } else if (dist) {
         // Close approach scan (CAD)
         const limitParam = limit ? `&limit=${encodeURIComponent(limit)}` : "&limit=5";
-        
-        // NASA requires a date-min so it doesn't try to send 100 years of data at once
         const today = new Date().toISOString().split('T')[0];
         endpoint = `cad.api?dist-max=${encodeURIComponent(dist)}&date-min=${today}${limitParam}`;
+    } else if (horizons) {
+        // LIVE PLANETARY POSITIONS (Horizons Ephemeris)
+        const today = new Date().toISOString().split('T')[0];
+        const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+        endpoint = `horizons.api?format=json&COMMAND='${encodeURIComponent(horizons)}'&OBJ_DATA='YES'&MAKE_EPHEM='YES'&EPHEM_TYPE='ELEMENTS'&CENTER='500@10'&START_TIME='${today}'&STOP_TIME='${tomorrow}'&STEP_SIZE='1d'`;
     } else {
-        return res.status(400).json({ error: "Missing parameters: provide 'des' or 'dist'" });
+        return res.status(400).json({ error: "Missing parameters: provide 'des', 'dist', or 'horizons'" });
     }
 
     try {
