@@ -95,6 +95,33 @@
         input[type="text"], input[type="number"], select, input[type="datetime-local"] { width: 100%; box-sizing: border-box; background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 8px; border-radius: 4px; margin-bottom: 10px; }
         input[type="datetime-local"] { color-scheme: dark; }
         
+        /* The Flaming Asteroid Scrub Slider */
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; height: 28px; margin: 15px 0; position: relative; }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 8px; background: rgba(255, 68, 68, 0.3); border-radius: 4px; border: 1px solid rgba(255, 255, 255, 0.1); }
+        input[type=range]::-webkit-slider-thumb { 
+            -webkit-appearance: none; 
+            height: 28px; 
+            width: 28px; 
+            background: url('data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%3E%3Ctext%20y%3D%2220%22%20font-size%3D%2220%22%3E%F0%9F%AA%A8%3C%2Ftext%3E%3C%2Fsvg%3E') no-repeat center center;
+            background-size: contain;
+            cursor: pointer; 
+            border: none; 
+            box-shadow: none; 
+            margin-top: -10px;
+            filter: drop-shadow(0 0 6px rgba(255,68,68,0.9));
+        }
+        input[type=range]::-moz-range-track { width: 100%; height: 8px; background: rgba(255, 68, 68, 0.3); border-radius: 4px; border: 1px solid rgba(255, 255, 255, 0.1); }
+        input[type=range]::-moz-range-thumb { 
+            height: 28px; 
+            width: 28px; 
+            background: url('data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%3E%3Ctext%20y%3D%2220%22%20font-size%3D%2220%22%3E%F0%9F%AA%A8%3C%2Ftext%3E%3C%2Fsvg%3E') no-repeat center center;
+            background-size: contain;
+            cursor: pointer; 
+            border: none; 
+            box-shadow: none; 
+            filter: drop-shadow(0 0 6px rgba(255,68,68,0.9));
+        }
+        
         #suggestions { position: absolute; width: calc(100% - 30px); background: #111; border: 1px solid #444; border-top: none; max-height: 150px; overflow-y: auto; z-index: 20; display: none; border-radius: 0 0 6px 6px; }
         .suggestion-item { padding: 8px; cursor: pointer; font-size: 0.8rem; border-bottom: 1px solid #333; }
         .suggestion-item:hover { background: rgba(0,255,204,0.3); }
@@ -141,12 +168,31 @@
             80% { opacity: 1; }
             100% { top: 60%; left: 60%; transform: scale(1.5) rotate(45deg); opacity: 0; }
         }
+        .asteroid-anim { position: absolute; opacity: 0; }
+        @keyframes astPass1 {
+            0% { top: -10%; left: 110%; transform: scale(0.5) rotate(0deg); opacity: 0; }
+            20% { opacity: 1; }
+            80% { opacity: 1; }
+            100% { top: 80%; left: -20%; transform: scale(1.2) rotate(200deg); opacity: 0; }
+        }
+        @keyframes astPass2 {
+            0% { top: 110%; left: 110%; transform: scale(0.7) rotate(0deg); opacity: 0; }
+            20% { opacity: 1; }
+            80% { opacity: 1; }
+            100% { top: 10%; left: -20%; transform: scale(1.4) rotate(-150deg); opacity: 0; }
+        }
+        @keyframes astPass3 {
+            0% { top: 40%; left: 110%; transform: scale(0.4) rotate(0deg); opacity: 0; }
+            20% { opacity: 1; }
+            80% { opacity: 1; }
+            100% { top: 60%; left: -20%; transform: scale(1.0) rotate(300deg); opacity: 0; }
+        }
     </style>
 </head>
 <body>
     <!-- OVERLAYS & UI -->
     <div id="flash-overlay"></div>
-    <button id="skip-intro-btn" onclick="forceEndCinematic()">Skip Intro ❯</button>
+    <button id="skip-intro-btn" onclick="window.forceEndCinematic()">Skip Intro ❯</button>
 
     <div id="nolasco-intro">
         <div class="nolasco-wrapper">
@@ -163,7 +209,7 @@
     <div id="sync-status">● Paused</div>
     
     <div id="info-panel" class="panel">
-        <div id="info-title"><span id="target-name">Object</span><span class="close-btn" onclick="resetView()" title="Close HUD & Reset View">✕</span></div>
+        <div id="info-title"><span id="target-name">Object</span><span class="close-btn" onclick="window.resetView()" title="Close HUD & Reset View">✕</span></div>
         <div class="info-stat"><span class="info-label">Type:</span> <span id="info-type" class="info-val">-</span></div>
         <div class="info-stat"><span class="info-label">Speed:</span> <span id="info-vel" class="info-val">-</span></div>
         <div class="info-stat"><span class="info-label">Dist from Sun:</span> <span id="info-dist" class="info-val">-</span></div>
@@ -175,37 +221,56 @@
     </div>
 
     <div id="ui-container">
-        <div style="display: flex; gap: 10px; pointer-events: auto;">
-            <button class="menu-btn" id="btn-planetary-rotation" style="width: auto; padding: 10px 20px; border-color: rgba(255,255,255,0.2); color: white;" onclick="togglePlanetaryRotation()">ROTATION: OFF</button>
-            <button class="menu-btn" style="width: auto; padding: 10px 20px; background: rgba(200, 50, 50, 0.6); border-color: #ff4444;" onclick="returnToSolarOrbit()">RETURN TO SYSTEM</button>
-            <button class="menu-btn" style="width: auto; padding: 10px 20px;" onclick="document.getElementById('menu-main').style.display = (document.getElementById('menu-main').style.display === 'block') ? 'none' : 'block'">COMMAND MENU</button>
-        </div>
+        <!-- Unified Master Menu Button -->
+        <button class="menu-btn" id="master-toggle-btn" style="width: auto; padding: 12px 24px; pointer-events: auto; font-size: 0.95rem; border-color: #00ffcc; background: rgba(10, 15, 30, 0.85); box-shadow: 0 4px 15px rgba(0,0,0,0.5); backdrop-filter: blur(10px);" onclick="window.toggleMenu('menu-main')">☰ SYSTEM MENU</button>
 
-        <div id="menu-main" class="panel">
-            <button class="menu-btn" id="play-pause-btn" onclick="togglePlay()">PLAY MOVEMENT</button>
+        <div id="menu-main" class="panel" style="pointer-events: auto; margin-top: 10px;">
+            <button class="menu-btn" style="background: rgba(200, 50, 50, 0.6); border-color: #ff4444;" onclick="window.returnToSolarOrbit()">RETURN TO SOLAR SYSTEM</button>
+            <button class="menu-btn" id="btn-planetary-rotation" style="border-color: rgba(255,255,255,0.2); color: white;" onclick="window.togglePlanetaryRotation()">ROTATION: OFF</button>
+            <button class="menu-btn" id="play-pause-btn" onclick="window.togglePlay()">PLAY MOVEMENT</button>
             
-            <button class="menu-btn" onclick="toggleMenu('time-submenu')">TIME CONTROLS ▼</button>
+            <button class="menu-btn" onclick="window.toggleMenu('time-submenu')">TIME CONTROLS ▼</button>
             <div id="time-submenu" class="submenu">
                 <div id="current-time-display">Current: Live System Time</div>
                 <label>Target Date/Time:</label>
-                <input type="datetime-local" id="time-picker" onchange="setSimulationTime()">
-                <button class="menu-btn" onclick="resetToRealTime()">SYNC TO NOW</button>
+                <input type="datetime-local" id="time-picker" onchange="window.setSimulationTime()">
+                <button class="menu-btn" onclick="window.resetToRealTime()">SYNC TO NOW</button>
             </div>
 
-            <button class="menu-btn" onclick="toggleMenu('object-submenu')">SEARCH OBJECTS ▼</button>
+            <button class="menu-btn" onclick="window.toggleMenu('object-submenu')">SEARCH OBJECTS ▼</button>
             <div id="object-submenu" class="submenu" style="position:relative;">
-                <input type="text" id="obj-search" placeholder="e.g. Ceres, Apophis" oninput="showSuggestions(this.value)">
+                <input type="text" id="obj-search" placeholder="e.g. Ceres, Apophis" oninput="window.showSuggestions(this.value)">
                 <div id="suggestions"></div>
-                <button class="menu-btn" style="margin-top: 10px;" onclick="searchSpecificObject()">SEARCH DATABASE</button>
+                <button class="menu-btn" style="margin-top: 10px;" onclick="window.searchSpecificObject()">SEARCH DATABASE</button>
             </div>
 
-            <button class="menu-btn" onclick="toggleMenu('trajectory-submenu')">EARTH TRAJECTORY ▼</button>
+            <button class="menu-btn" onclick="window.toggleMenu('trajectory-submenu')">EARTH TRAJECTORY ▼</button>
             <div id="trajectory-submenu" class="submenu">
                 <p style="font-size: 0.75rem; color: #aaa; margin: 0 0 10px 0;">Scan for objects threatening Earth orbital path.</p>
-                <button class="menu-btn" style="background: rgba(200, 50, 50, 0.6); border-color: #ff4444;" onclick="searchEarthApproaches()">BEGIN SEARCH</button>
+                <button class="menu-btn" style="background: rgba(200, 50, 50, 0.6); border-color: #ff4444;" onclick="window.searchEarthApproaches()">BEGIN SEARCH</button>
             </div>
             
             <button class="menu-btn" onclick="document.getElementById('tracker-panel').style.display='block'">ASTEROID TRACKER</button>
+        </div>
+    </div>
+
+    <!-- NEW: Minimizable Top-Mounted Trajectory Control Panel -->
+    <div id="trajectory-control-panel" class="panel" style="display:none; position:absolute; top:20px; left:50%; transform:translateX(-50%); width:320px; z-index:100; padding-top:0;">
+        <div style="cursor: pointer; padding: 15px 0; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;" onclick="window.toggleTrajPanel()">
+            <h3 style="margin:0; border:none; padding:0;">IMPACT TRAJECTORY</h3>
+            <span id="traj-toggle-icon" style="color:#00ffcc; font-size:1.2rem;">▼</span>
+        </div>
+        <div id="traj-panel-content">
+            <p style="font-size:0.75rem; color:#aaa; margin-top:-5px; margin-bottom:10px;">Scrub timeline or pause playback.</p>
+            
+            <input type="range" id="traj-slider" min="0" max="100" value="0" oninput="window.onTrajScrub()">
+            
+            <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                <button class="menu-btn" id="traj-play-btn" style="flex: 1; margin: 0; padding: 10px 5px; font-size: 0.75rem;" onclick="window.toggleTrajPlay()">PAUSE</button>
+                <button class="menu-btn" style="flex: 1; margin: 0; padding: 10px 5px; background: rgba(0, 150, 255, 0.4); border-color: #00aaff; font-size: 0.75rem;" onclick="window.freeMoveTrajCamera()">CAM 🎥</button>
+                <button class="menu-btn" style="flex: 1; margin: 0; padding: 10px 5px; background: rgba(255, 204, 0, 0.4); border-color: #ffcc00; font-size: 0.75rem;" onclick="window.showTrajInfo()">INFO ℹ️</button>
+            </div>
+            <button class="menu-btn" style="background: rgba(200, 50, 50, 0.6); border-color: #ff4444; margin: 0;" onclick="window.returnToSolarOrbit()">ABORT SIMULATION</button>
         </div>
     </div>
 
@@ -226,7 +291,7 @@
             <option value="2.0">186.0M miles (2.0 AU)</option>
             <option value="5.0">465.0M miles (5.0 AU)</option>
         </select>
-        <button class="menu-btn" onclick="fetchForeignObject()">FETCH LIVE DATA</button>
+        <button class="menu-btn" onclick="window.fetchForeignObject()">FETCH LIVE DATA</button>
         <p id="tracker-status" style="font-size:0.8rem; color:#aaa; margin-top:5px;"></p>
     </div>
 
@@ -246,6 +311,24 @@
         </div>
     </div>
 
+    <!-- Earth Trajectory Asteroid Loading Screen -->
+    <div id="earth-traj-loading-dialog" class="dialog">
+        <div class="dialog-header">
+            <span>TRAJECTORY SCAN</span>
+            <span class="close-btn" onclick="document.getElementById('earth-traj-loading-dialog').style.display='none'">✕</span>
+        </div>
+        <div class="sat-loader-container">
+            <div class="sat-anim-wrapper">
+                <div class="earth-icon-anim">🌍</div>
+                <div class="asteroid-anim" style="animation: astPass1 1.8s linear infinite; font-size: 1.4rem;">🪨</div>
+                <div class="asteroid-anim" style="animation: astPass2 2.2s linear infinite; animation-delay: 0.5s; font-size: 1.1rem;">🪨</div>
+                <div class="asteroid-anim" style="animation: astPass3 1.5s linear infinite; animation-delay: 1.1s; font-size: 1.6rem;">🪨</div>
+            </div>
+            <p style="color:#00ffcc; margin-top:20px; font-family: monospace; font-size: 0.9rem;">Calculating Intersections...</p>
+            <p style="color:#666; font-size: 0.75rem; margin-top:5px;">Scanning Earth Orbital Path</p>
+        </div>
+    </div>
+
     <div id="results-dialog" class="dialog">
         <div class="dialog-header">
             <span>INBOUND TRAJECTORIES</span>
@@ -260,14 +343,14 @@
             <span class="close-btn" onclick="document.getElementById('details-dialog').style.display='none'">✕</span>
         </div>
         <div id="obj-info" style="margin-bottom: 20px;"></div>
-        <button class="menu-btn" style="background: rgba(200, 50, 50, 0.6); border-color:#ff4444; color:white; text-align:center; padding: 12px; font-size: 1rem;" onclick="runTrajectorySimulation()">SHOW COLLISION TRAJECTORY</button>
+        <button class="menu-btn" style="background: rgba(200, 50, 50, 0.6); border-color:#ff4444; color:white; text-align:center; padding: 12px; font-size: 1rem;" onclick="window.runTrajectorySimulation()">SHOW COLLISION TRAJECTORY</button>
     </div>
 
     <!-- Space Station Tracker Dialogs -->
     <div id="sat-dialog" class="dialog">
         <div class="dialog-header">
             <span id="sat-dialog-title">ORBITAL DATABASE</span>
-            <span class="close-btn" onclick="closeSatTracker()">✕</span>
+            <span class="close-btn" onclick="window.closeSatTracker()">✕</span>
         </div>
         <div id="sat-loading-view" style="display:none;">
             <div class="sat-loader-container">
@@ -283,18 +366,18 @@
             <div id="sat-detail-content" style="margin-bottom: 10px;"></div>
             <p id="cache-notice" style="font-size: 0.7rem; color: #aaa; text-align: center; margin-bottom: 15px;">Data verified. Cache active to preserve bandwidth.</p>
             <div style="display:flex; justify-content:space-between; margin-bottom: 5px;">
-                <button class="menu-btn" style="width: 48%; background: rgba(100,100,100,0.6);" onclick="showSatList()">◀ BACK</button>
-                <button class="menu-btn" style="width: 48%; background: rgba(0, 200, 100, 0.6); border-color: #00ffaa;" onclick="findSatOrbit()">FIND ON MAP</button>
+                <button class="menu-btn" style="width: 48%; background: rgba(100,100,100,0.6);" onclick="window.showSatList()">◀ BACK</button>
+                <button class="menu-btn" style="width: 48%; background: rgba(0, 200, 100, 0.6); border-color: #00ffaa;" onclick="window.findSatOrbit()">FIND ON MAP</button>
             </div>
-            <button class="menu-btn" style="width: 100%; background: rgba(50, 100, 200, 0.6); border-color: #00aaff; text-align: center;" onclick="forceRefreshSatData()">↻ REFRESH TELEMETRY</button>
+            <button class="menu-btn" style="width: 100%; background: rgba(50, 100, 200, 0.6); border-color: #00aaff; text-align: center;" onclick="window.forceRefreshSatData()">↻ REFRESH TELEMETRY</button>
         </div>
     </div>
 
     <div id="sat-control-menu" class="panel" style="display:none; position:absolute; bottom:20px; right:20px; width:260px; z-index:100;">
         <h3 style="margin-top:0;">STATION CONTROLS</h3>
-        <button class="menu-btn" onclick="freeMoveCamera()">FREE MOVE CAMERA 🎥</button>
-        <button class="menu-btn" onclick="showSatInfo()">INFORMATION ℹ️</button>
-        <button class="menu-btn" style="background: rgba(200, 50, 50, 0.6); border-color: #ff4444;" onclick="returnToSolarOrbit()">RETURN TO SOLAR SYSTEM 🌌</button>
+        <button class="menu-btn" onclick="window.freeMoveCamera()">FREE MOVE CAMERA 🎥</button>
+        <button class="menu-btn" onclick="window.showSatInfo()">INFORMATION ℹ️</button>
+        <button class="menu-btn" style="background: rgba(200, 50, 50, 0.6); border-color: #ff4444;" onclick="window.returnToSolarOrbit()">RETURN TO SOLAR SYSTEM 🌌</button>
     </div>
 
     <div id="sat-info-dialog" class="dialog" style="z-index: 250; left: 20px; transform: translateY(-50%); top: 50%;">
@@ -303,6 +386,15 @@
             <span class="close-btn" onclick="document.getElementById('sat-info-dialog').style.display='none'">✕</span>
         </div>
         <div id="sat-info-content" style="font-size: 0.85rem; line-height: 1.6; color: #ddd;"></div>
+    </div>
+
+    <!-- NEW: Trajectory Info Dialog -->
+    <div id="traj-info-dialog" class="dialog" style="z-index: 250; left: 20px; transform: translateY(-50%); top: 50%;">
+        <div class="dialog-header">
+            <span id="traj-info-title" style="color: #ffcc00;">IMPACT DATA</span>
+            <span class="close-btn" onclick="document.getElementById('traj-info-dialog').style.display='none'">✕</span>
+        </div>
+        <div id="traj-info-content" style="font-size: 0.85rem; line-height: 1.6; color: #ddd;"></div>
     </div>
 
     <!-- Core Libraries -->
@@ -336,6 +428,16 @@
         var currentMeteorSelection = null;
         var cameraContext = 'solar_system'; 
         var currentNeoViewRadius = 18;
+        
+        // --- NEW TRAJECTORY GLOBALS ---
+        window.activeTrajectoryMeteor = null;
+        window.trajectoryEarthPos = null;
+        window.trajectorySpawnPos = null;
+        window.trajectoryProgress = 0;
+        window.isTrajectoryPlaying = false;
+        window.trajectoryOrbitLine = null;
+        window.trajCamTween = null;
+        window.trajTargetTween = null;
         
         var localDb = ["Ceres", "433 Eros", "Vesta", "Pallas"];
         const NASA_API_BASE = "https://ssd-api.jpl.nasa.gov";
@@ -396,6 +498,22 @@
         // 2. HELPER FUNCTIONS
         // ============================================================================
         
+        // --- NEW: Universal Scale Generator ---
+        window.getHumanScale = function(diameterKm) {
+            if (!diameterKm) return "A small celestial object 🪨";
+            if (diameterKm < 0.010) return "A compact car 🚗";
+            if (diameterKm < 0.020) return "A yellow school bus 🚌";
+            if (diameterKm < 0.050) return "A commercial airplane ✈️";
+            if (diameterKm < 0.120) return "The Statue of Liberty 🗽";
+            if (diameterKm < 0.200) return "The Great Pyramid of Giza 🏜️";
+            if (diameterKm < 0.350) return "The Eiffel Tower 🗼";
+            if (diameterKm < 0.800) return "The Burj Khalifa 🏙️";
+            if (diameterKm < 1.5) return "The Golden Gate Bridge 🌉";
+            if (diameterKm < 3.0) return "A small city 🌆";
+            if (diameterKm < 10.0) return "Mount Everest ⛰️";
+            return "A massive global threat 💥";
+        }
+
         function getEarth() {
             if (typeof solarSystemGroup !== 'undefined' && solarSystemGroup) {
                 const earth = solarSystemGroup.children.find(c => c.userData && c.userData.name === 'Earth');
@@ -732,22 +850,22 @@
                 if (targetObj && targetObj.userData && targetObj.userData.isTarget) {
                     if (cameraContext === 'neo_scan') {
                         if (targetObj.userData.type === "Asteroid / NEO" || targetObj.userData.type === "DANGER: INBOUND" || targetObj.userData.type === "Comet / NEO") {
-                            focusOnTarget(targetObj);
+                            window.focusOnTarget(targetObj);
                         } else {
-                            unfocusTarget();
+                            window.unfocusTarget();
                         }
                     } else {
-                        focusOnTarget(targetObj);
+                        window.focusOnTarget(targetObj);
                     }
                 } else {
-                    unfocusTarget();
+                    window.unfocusTarget();
                 }
             } else {
-                unfocusTarget();
+                window.unfocusTarget();
             }
         }
 
-        function focusOnTarget(target) {
+        window.focusOnTarget = function(target) {
             focusedTarget = target;
             const data = target.userData;
             
@@ -782,7 +900,7 @@
 
             const actionsDiv = document.getElementById('dynamic-info-actions');
             if (data.name === "Earth") {
-                actionsDiv.innerHTML = `<button class="menu-btn" style="background: rgba(0, 150, 255, 0.6); border-color: #00aaff; width: 100%; text-align: center; margin: 0; padding: 12px; font-size: 0.9rem;" onclick="openSatTracker()">🛰️ TRACK SPACE STATIONS</button>`;
+                actionsDiv.innerHTML = `<button class="menu-btn" style="background: rgba(0, 150, 255, 0.6); border-color: #00aaff; width: 100%; text-align: center; margin: 0; padding: 12px; font-size: 0.9rem;" onclick="window.openSatTracker()">🛰️ TRACK SPACE STATIONS</button>`;
                 actionsDiv.style.display = 'block';
             } else {
                 actionsDiv.style.display = 'none';
@@ -801,7 +919,7 @@
             }
         }
 
-        function unfocusTarget() {
+        window.unfocusTarget = function() {
             focusedTarget = null;
             document.getElementById('info-panel').style.display = 'none';
 
@@ -827,13 +945,13 @@
                     new TWEEN.Tween(controls.target).to({ x: 0, y: 0, z: 0 }, 1200).easing(TWEEN.Easing.Cubic.Out).start();
                 }
             }
+        };
+
+        window.resetView = function() {
+            window.unfocusTarget();
         }
 
-        function resetView() {
-            unfocusTarget();
-        }
-
-        function returnToSolarOrbit() {
+        window.returnToSolarOrbit = function() {
             document.getElementById('menu-main').style.display = 'none';
             document.getElementById('tracker-panel').style.display = 'none';
             document.getElementById('info-panel').style.display = 'none';
@@ -842,6 +960,27 @@
             document.getElementById('sat-info-dialog').style.display = 'none';
             document.getElementById('results-dialog').style.display = 'none';
             document.getElementById('details-dialog').style.display = 'none';
+            document.getElementById('traj-info-dialog').style.display = 'none';
+            
+            // --- Reset Submenus to Default Collapsed State ---
+            const submenus = document.querySelectorAll('.submenu');
+            submenus.forEach(menu => menu.style.display = 'none');
+            document.getElementById('suggestions').style.display = 'none';
+            document.getElementById('obj-search').value = '';
+            
+            // --- Trajectory Cleanup ---
+            document.getElementById('trajectory-control-panel').style.display = 'none';
+            if (window.activeTrajectoryMeteor) {
+                if (solarSystemGroup) solarSystemGroup.remove(window.activeTrajectoryMeteor);
+                window.activeTrajectoryMeteor = null;
+            }
+            if (window.trajectoryOrbitLine) {
+                if (solarSystemGroup) solarSystemGroup.remove(window.trajectoryOrbitLine);
+                if(window.trajectoryOrbitLine.geometry) window.trajectoryOrbitLine.geometry.dispose();
+                if(window.trajectoryOrbitLine.material) window.trajectoryOrbitLine.material.dispose();
+                window.trajectoryOrbitLine = null;
+            }
+            window.isTrajectoryPlaying = false;
             
             document.getElementById('sync-status').innerHTML = isPlaying ? "● Playing" : "● Paused";
             document.getElementById('sync-status').style.color = isPlaying ? "#00ffcc" : "#ffcc00";
@@ -869,24 +1008,24 @@
             if (typeof liveTrackingInterval !== 'undefined' && liveTrackingInterval) clearInterval(liveTrackingInterval);
 
             focusedTarget = null;
-            clearTrackedObjects();
+            window.clearTrackedObjects();
             
             if (typeof window !== 'undefined' && window.TWEEN) {
                 new TWEEN.Tween(camera.position).to({ x: 0, y: 50, z: 80 }, 1500).easing(TWEEN.Easing.Cubic.InOut).start();
                 new TWEEN.Tween(controls.target).to({ x: 0, y: 0, z: 0 }, 1500).easing(TWEEN.Easing.Cubic.InOut).start();
             }
-        }
+        };
 
-        function togglePlanetaryRotation() {
+        window.togglePlanetaryRotation = function() {
             isPlanetaryRotationOn = !isPlanetaryRotationOn;
             const btn = document.getElementById('btn-planetary-rotation');
             btn.innerText = "ROTATION: " + (isPlanetaryRotationOn ? "ON" : "OFF");
             btn.style.borderColor = isPlanetaryRotationOn ? "#00ffcc" : "rgba(255, 255, 255, 0.2)";
             btn.style.color = isPlanetaryRotationOn ? "#00ffcc" : "white";
             btn.style.background = isPlanetaryRotationOn ? "rgba(0, 255, 204, 0.15)" : "rgba(40, 45, 60, 0.8)";
-        }
+        };
 
-        function togglePlay() {
+        window.togglePlay = function() {
             isPlaying = !isPlaying;
             document.getElementById('play-pause-btn').innerText = isPlaying ? "PAUSE MOVEMENT" : "PLAY MOVEMENT";
             document.getElementById('sync-status').innerText = isPlaying ? "● Playing" : "● Paused";
@@ -894,18 +1033,18 @@
             lastTime = Date.now();
         }
 
-        function toggleMenu(id) {
+        window.toggleMenu = function(id) {
             const menu = document.getElementById(id);
             menu.style.display = (menu.style.display === 'block' ? 'none' : 'block');
         }
 
-        function setSimulationTime() {
+        window.setSimulationTime = function() {
             const picked = new Date(document.getElementById('time-picker').value).getTime();
             accumulatedTimeDays = (picked - Date.now()) / 86400000;
             document.getElementById('sync-status').innerText = "● Custom Date";
         }
 
-        function resetToRealTime() {
+        window.resetToRealTime = function() {
             accumulatedTimeDays = 0;
             document.getElementById('sync-status').innerText = "● Paused";
         }
@@ -957,43 +1096,55 @@
             }
         }
 
-        async function searchEarthApproaches() {
-            const dialog = document.getElementById('results-dialog');
+        window.searchEarthApproaches = async function() {
+            document.getElementById('menu-main').style.display = 'none';
+            const loadingDialog = document.getElementById('earth-traj-loading-dialog');
+            const resultsDialog = document.getElementById('results-dialog');
             const list = document.getElementById('results-list');
-            dialog.style.display = 'block';
-            list.innerHTML = "<p style='color:#00ffcc;'>Connecting to JPL Close Approach Database... ⏳</p>";
+            
+            loadingDialog.style.display = 'block';
+            resultsDialog.style.display = 'none';
+
             try {
+                // Fake delay to show off the cool asteroid animation
+                await new Promise(r => setTimeout(r, 1500)); 
+
                 const today = new Date().toISOString().split('T')[0];
-                let data = await fetchWithFallback(`${NASA_API_BASE}/cad.api?dist-max=0.05&limit=30&sort=dist&date-min=${today}`);
+                let data = await window.fetchWithFallback(`${NASA_API_BASE}/cad.api?dist-max=0.2&limit=30&date-min=${today}`);
                 
                 let html = "";
                 if (data.data && data.data.length > 0) {
                     data.data.forEach(obj => {
                         const name = obj[0]; const date = obj[3]; const distAU = parseFloat(obj[4]); const vel = parseFloat(obj[7]);
                         const distM = (distAU * 92.96).toFixed(2);
-                        const h_mag = obj[10] ? parseFloat(obj[10]) : (Math.random() * 5 + 18);
+                        const h_mag = obj[10] ? parseFloat(obj[10]) : (Math.random() * 12 + 16);
                         const diameterKm = 1329 * Math.pow(10, -h_mag / 5) / Math.sqrt(0.15); 
                         const safeObj = { name: name, date: date, distAU: distAU, distM: distM, vel: vel, diameterKm: diameterKm };
                         const safeData = JSON.stringify(safeObj).replace(/"/g, '&quot;').replace(/'/g, "\\'");
-                        html += `<div class="result-item" onclick="showTrajectoryDetails('${safeData}')"><div class="result-name">${name}</div><div class="result-desc">Approach: ${date} | Dist: ${distM}M miles</div></div>`;
+                        html += `<div class="result-item" onclick="window.showTrajectoryDetails('${safeData}')"><div class="result-name">${name}</div><div class="result-desc">Approach: ${date} | Dist: ${distM}M miles</div></div>`;
                     });
                 } else { html = "<p style='color:#aaa;'>No immediate Earth threats detected.</p>"; }
+                
                 list.innerHTML = html;
-            } catch(e) { list.innerHTML = "<p style='color:#ff4444;'>Failed to communicate with orbital database.</p>"; }
-        }
+                loadingDialog.style.display = 'none';
+                resultsDialog.style.display = 'block';
 
-        function showTrajectoryDetails(dataStr) {
+            } catch(e) { 
+                loadingDialog.style.display = 'none';
+                resultsDialog.style.display = 'block';
+                list.innerHTML = "<p style='color:#ff4444;'>Failed to communicate with orbital database.</p>"; 
+            }
+        };
+
+        window.showTrajectoryDetails = function(dataStr) {
             const data = JSON.parse(dataStr);
             currentMeteorSelection = data;
             document.getElementById('details-dialog').style.display = 'block';
             document.getElementById('obj-title').innerText = data.name;
             const speed = data.vel ? (data.vel * 0.621371).toFixed(2) : "Unknown";
             const sizeDesc = data.diameterKm < 1 ? (data.diameterKm * 3280.84).toFixed(0) + " ft" : (data.diameterKm * 0.621371).toFixed(2) + " miles";
-            let comp = "A small celestial object";
-            if (data.diameterKm < 0.015) comp = "A yellow school bus 🚌";
-            else if (data.diameterKm < 0.12) comp = "The Statue of Liberty 🗽";
-            else if (data.diameterKm < 0.35) comp = "The Eiffel Tower 🗼";
-            else comp = "A large mountain ⛰️";
+            
+            const comp = window.getHumanScale(data.diameterKm);
             
             document.getElementById('obj-info').innerHTML = `
                 <div class="info-stat"><span class="info-label">Approach Date:</span> <span class="info-val">${data.date}</span></div>
@@ -1005,14 +1156,67 @@
                     <span style="font-size:0.95rem; color:#fff;">${comp}</span>
                 </div>
             `;
+        };
+
+        // --- NEW TRAJECTORY SIMULATION WITH UI CONTROLS ---
+        window.toggleTrajPanel = function() {
+            const content = document.getElementById('traj-panel-content');
+            const icon = document.getElementById('traj-toggle-icon');
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                icon.innerText = '▼';
+            } else {
+                content.style.display = 'none';
+                icon.innerText = '▲';
+            }
+        };
+
+        window.onTrajScrub = function() {
+            window.trajectoryProgress = document.getElementById('traj-slider').value / 100;
+            window.isTrajectoryPlaying = false;
+            document.getElementById('traj-play-btn').innerText = "PLAY";
         }
 
-        function runTrajectorySimulation() {
+        window.toggleTrajPlay = function() {
+            if (window.trajectoryProgress >= 1.0) window.trajectoryProgress = 0; 
+            window.isTrajectoryPlaying = !window.isTrajectoryPlaying;
+            document.getElementById('traj-play-btn').innerText = window.isTrajectoryPlaying ? "PAUSE" : "PLAY";
+        }
+
+        window.freeMoveTrajCamera = function() {
+            if (window.trajCamTween) window.trajCamTween.stop();
+            if (window.trajTargetTween) window.trajTargetTween.stop();
+        }
+
+        window.showTrajInfo = function() {
+            if (!currentMeteorSelection) return;
+            document.getElementById('traj-info-dialog').style.display = 'block';
+            document.getElementById('traj-info-title').innerText = currentMeteorSelection.name + " DATA";
+            
+            const speed = currentMeteorSelection.vel ? (currentMeteorSelection.vel * 0.621371).toFixed(2) : "Unknown";
+            const sizeDesc = currentMeteorSelection.diameterKm < 1 ? (currentMeteorSelection.diameterKm * 3280.84).toFixed(0) + " ft" : (currentMeteorSelection.diameterKm * 0.621371).toFixed(2) + " miles";
+            const comp = window.getHumanScale(currentMeteorSelection.diameterKm);
+
+            document.getElementById('traj-info-content').innerHTML = `
+                <div style="margin-bottom: 8px;"><strong style="color:#ffcc00;">Approach Date:</strong> ${currentMeteorSelection.date}</div>
+                <div style="margin-bottom: 8px;"><strong style="color:#ffcc00;">Miss Distance:</strong> ${currentMeteorSelection.distM}M miles</div>
+                <div style="margin-bottom: 8px;"><strong style="color:#ffcc00;">Velocity:</strong> ${speed} mi/s</div>
+                <div style="margin-bottom: 8px;"><strong style="color:#ffcc00;">Est. Diameter:</strong> ${sizeDesc}</div>
+                <div style="margin-top: 15px; border-top: 1px dashed rgba(255,255,255,0.2); padding-top: 15px; color: #fff; font-style: italic;">
+                    <strong>Scale:</strong> ${comp}
+                </div>
+                <div style="margin-top: 15px; font-size: 0.7rem; color: #888; background: rgba(0,0,0,0.4); padding: 8px; border-radius: 4px;">
+                    * Trajectory simulation is mathematically modeled from JPL CAD parameters relative to Earth's current orbital position.
+                </div>
+            `;
+        };
+
+        window.runTrajectorySimulation = function() {
             if (!currentMeteorSelection) return;
             document.getElementById('details-dialog').style.display = 'none';
             document.getElementById('results-dialog').style.display = 'none';
             document.getElementById('menu-main').style.display = 'none';
-            unfocusTarget();
+            window.unfocusTarget();
 
             isPlaying = false;
             document.getElementById('play-pause-btn').innerText = "PLAY MOVEMENT";
@@ -1030,7 +1234,7 @@
             const meteorGroup = new THREE.Group();
             meteorGroup.position.copy(spawnPos);
 
-            const geo = createHDAsteroidGeometry(0.8);
+            const geo = window.createHDAsteroidGeometry(0.8);
             const mat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.9, emissive: 0xff3300, emissiveIntensity: 0.5, flatShading: true });
             const rock = new THREE.Mesh(geo, mat);
             meteorGroup.add(rock);
@@ -1051,36 +1255,37 @@
             solarSystemGroup.add(meteorGroup);
             solarSystemGroup.add(orbitLine);
             
-            let comp = "A small celestial object";
-            if (currentMeteorSelection.diameterKm < 0.015) comp = "A yellow school bus 🚌";
-            meteorGroup.userData = { isTarget: true, name: currentMeteorSelection.name, type: "DANGER: INBOUND", a: currentMeteorSelection.distAU, v: currentMeteorSelection.vel, size: 0.8, comp: comp };
+            const comp = window.getHumanScale(currentMeteorSelection.diameterKm);
+            meteorGroup.userData = { isTarget: true, name: currentMeteorSelection.name, type: "DANGER: INBOUND", a: currentMeteorSelection.distAU, v: currentMeteorSelection.vel, size: 0.8, comp: comp, hasImpacted: false };
             interactableObjects.push(meteorGroup);
+
+            // Set up manual interactive state
+            window.activeTrajectoryMeteor = meteorGroup;
+            window.trajectoryOrbitLine = orbitLine;
+            window.trajectoryEarthPos = earthMesh.position.clone();
+            window.trajectorySpawnPos = spawnPos.clone();
+            window.trajectoryProgress = 0;
+            window.isTrajectoryPlaying = true;
+
+            // Show controls Expanded
+            document.getElementById('trajectory-control-panel').style.display = 'block';
+            document.getElementById('traj-panel-content').style.display = 'block';
+            document.getElementById('traj-toggle-icon').innerText = '▼';
+            document.getElementById('traj-play-btn').innerText = "PAUSE";
+            document.getElementById('traj-slider').value = 0;
 
             const travelTime = 8000;
             if (typeof window !== 'undefined' && window.TWEEN) {
-                new TWEEN.Tween(meteorGroup.position).to({ x: earthMesh.position.x, y: earthMesh.position.y, z: earthMesh.position.z }, travelTime)
-                    .easing(TWEEN.Easing.Quadratic.In)
-                    .onUpdate(() => { if (meteorGroup) meteorGroup.lookAt(earthMesh.position); if (rock) { rock.rotation.x += 0.1; rock.rotation.z += 0.1; } })
-                    .onComplete(() => {
-                        const flash = new THREE.PointLight(0xffdd00, 15, 100);
-                        flash.position.copy(earthMesh.position);
-                        solarSystemGroup.add(flash);
-                        setTimeout(() => solarSystemGroup.remove(flash), 200);
-                        solarSystemGroup.remove(meteorGroup); solarSystemGroup.remove(orbitLine);
-                        document.getElementById('sync-status').innerText = "● Paused"; document.getElementById('sync-status').style.color = "#00ffcc";
-                    }).start();
-
                 const camOffset = new THREE.Vector3(15, 10, 15);
-                
                 const targetWorldPos = new THREE.Vector3();
                 earthMesh.getWorldPosition(targetWorldPos);
 
-                new TWEEN.Tween(camera.position).to({ x: targetWorldPos.x + camOffset.x, y: targetWorldPos.y + camOffset.y, z: targetWorldPos.z + camOffset.z }, travelTime).easing(TWEEN.Easing.Cubic.InOut).start();
-                new TWEEN.Tween(controls.target).to({ x: targetWorldPos.x, y: targetWorldPos.y, z: targetWorldPos.z }, travelTime).easing(TWEEN.Easing.Cubic.InOut).start();
+                window.trajCamTween = new TWEEN.Tween(camera.position).to({ x: targetWorldPos.x + camOffset.x, y: targetWorldPos.y + camOffset.y, z: targetWorldPos.z + camOffset.z }, travelTime).easing(TWEEN.Easing.Cubic.InOut).start();
+                window.trajTargetTween = new TWEEN.Tween(controls.target).to({ x: targetWorldPos.x, y: targetWorldPos.y, z: targetWorldPos.z }, travelTime).easing(TWEEN.Easing.Cubic.InOut).start();
             }
-        }
+        };
 
-        async function fetchWithFallback(targetUrl) {
+        window.fetchWithFallback = async function(targetUrl) {
             // 1. VERCEL PROXY PIPELINE (Ensures Vercel is tried FIRST)
             let localProxyUrl = null;
             if (targetUrl.includes('cad.api')) {
@@ -1125,8 +1330,8 @@
             // 3. PUBLIC CORS PROXIES
             const PROXIES = [
                 `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
-                `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`,
-                `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`
+                `https://api.codetabs.com/v1/proxy?quest=${targetUrl}`,
+                `https://corsproxy.io/?${targetUrl}`
             ];
             
             for (let p = 0; p < PROXIES.length; p++) {
@@ -1165,7 +1370,19 @@
                 
                 return { 
                     simulated: true, 
-                    data: Array.from({length: reqLimit}).map((_, i) => [offlineNEOs[i % offlineNEOs.length] + " (Offline Cache)", "2026", null, null, (Math.random() * maxDist + 0.001).toFixed(4)]) 
+                    data: Array.from({length: reqLimit}).map((_, i) => [
+                        offlineNEOs[i % offlineNEOs.length] + " (Offline Cache)", 
+                        "1", 
+                        "2460000", 
+                        "2026-06-" + (15 + i).toString().padStart(2, '0') + " 12:00", 
+                        (Math.random() * maxDist + 0.001).toFixed(4), 
+                        "0", 
+                        "0", 
+                        (Math.random() * 10 + 5).toFixed(2), 
+                        "0", 
+                        "0", 
+                        (Math.random() * 12 + 16).toFixed(1) // Broader magnitude generator 16 to 28
+                    ]) 
                 };
             } else if (targetUrl.includes('sbdb.api')) {
                 const urlParams = new URLSearchParams(targetUrl.split('?')[1]);
@@ -1178,17 +1395,17 @@
             }
             
             return { simulated: true, data: [] };
-        }
+        };
 
-        async function updateDailyDatabase() {
+        window.updateDailyDatabase = async function() {
             try {
                 const today = new Date().toISOString().split('T')[0];
-                const data = await fetchWithFallback(`${NASA_API_BASE}/cad.api?date-min=${today}&limit=20`);
+                const data = await window.fetchWithFallback(`${NASA_API_BASE}/cad.api?date-min=${today}&limit=20`);
                 if (data.data && !data.simulated) localDb = [...new Set([...localDb, ...data.data.map(i => i[0])])];
             } catch (e) {}
-        }
+        };
 
-        function showSuggestions(val) {
+        window.showSuggestions = function(val) {
             const list = document.getElementById('suggestions');
             list.innerHTML = '';
             if (!val) { list.style.display = 'none'; return; }
@@ -1203,9 +1420,9 @@
                     list.appendChild(item);
                 });
             } else list.style.display = 'none';
-        }
+        };
 
-        function clearTrackedObjects() {
+        window.clearTrackedObjects = function() {
             if (trackedMeshes) {
                 trackedMeshes.forEach(obj => {
                     solarSystemGroup.remove(obj.group);
@@ -1218,9 +1435,9 @@
                 });
                 trackedMeshes = [];
             }
-        }
+        };
 
-        function createHDAsteroidGeometry(baseSize) {
+        window.createHDAsteroidGeometry = function(baseSize) {
             const geo = new THREE.IcosahedronGeometry(baseSize, 0);
             const scaleX = 0.7 + Math.random() * 0.6;
             const scaleY = 0.7 + Math.random() * 0.6;
@@ -1228,10 +1445,10 @@
             geo.scale(scaleX, scaleY, scaleZ);
             geo.computeVertexNormals();
             return geo;
-        }
+        };
 
-        function addTrackedObject(name, isPassing = false, distAu = null, true_a = null, true_e = null) {
-            const geo = createHDAsteroidGeometry(isPassing ? 0.4 : 0.3);
+        window.addTrackedObject = function(name, isPassing = false, distAu = null, true_a = null, true_e = null, h_mag = null) {
+            const geo = window.createHDAsteroidGeometry(isPassing ? 0.4 : 0.3);
             const mat = new THREE.MeshStandardMaterial({ color: isPassing ? 0xff4444 : 0xaaaaaa, roughness: 0.9, flatShading: true });
             const asteroidObj = new THREE.Mesh(geo, mat);
 
@@ -1251,8 +1468,8 @@
             asteroidObj.add(hitBox);
 
             const sprite = new THREE.Sprite(getInfoSpriteMat());
-            sprite.scale.set(3, 3, 3); // Made the "i" slightly larger
-            sprite.position.set(0, 2.5, 0); // Pushed the "i" higher above the aura
+            sprite.scale.set(3, 3, 3); 
+            sprite.position.set(0, 2.5, 0); 
             sprite.renderOrder = 999; 
             asteroidObj.add(sprite);
 
@@ -1269,16 +1486,19 @@
 
             const trueDistAu = a / 13;
             const speedMiS = ((Math.random() * 10 + 10) / Math.sqrt(trueDistAu || 1)).toFixed(2);
-            
-            const v = 0.08 / Math.sqrt(trueDistAu || 1); 
-            const initialAngle = Math.random() * Math.PI * 2;
             const trailColor = isPassing ? 0xff0000 : 0x00ffff;
+
+            // Generate scale based on magnitude
+            const mag = h_mag !== null ? h_mag : (Math.random() * 12 + 16);
+            const diameterKm = 1329 * Math.pow(10, -mag / 5) / Math.sqrt(0.15);
+            const comp = window.getHumanScale(diameterKm);
 
             asteroidObj.userData = { 
                 isTarget: true, name: name, type: "Asteroid / NEO", a: trueDistAu, v: null, size: 0.4, speedStr: speedMiS + " mi/s",
-                orbitConfig: { a: a, e: e, v: v, initialAngle: initialAngle },
+                orbitConfig: { a: a, e: e, v: 0.08 / Math.sqrt(trueDistAu || 1), initialAngle: Math.random() * Math.PI * 2 },
                 color: trailColor,
-                aura: aura
+                aura: aura,
+                comp: comp
             };
             
             interactableObjects.push(asteroidObj);
@@ -1291,15 +1511,15 @@
             trackedMeshes.push({ group: orbitGroup, mesh: asteroidObj });
 
             return asteroidObj;
-        }
+        };
 
-        async function searchSpecificObject() {
+        window.searchSpecificObject = async function() {
             const des = document.getElementById('obj-search').value.trim();
             if(!des) return;
             
             document.getElementById('menu-main').style.display = 'none';
             document.getElementById('tracker-panel').style.display = 'none';
-            unfocusTarget();
+            window.unfocusTarget();
 
             const loadingDialog = document.getElementById('neo-loading-dialog');
             const loadingText = document.getElementById('neo-loading-text');
@@ -1309,17 +1529,17 @@
             
             try {
                 await new Promise(r => setTimeout(r, 800)); 
-                const data = await fetchWithFallback(`${NASA_API_BASE}/sbdb.api?sstr=${encodeURIComponent(des)}`);
+                const data = await window.fetchWithFallback(`${NASA_API_BASE}/sbdb.api?sstr=${encodeURIComponent(des)}`);
                 
                 if(data.object) {
-                    clearTrackedObjects();
+                    window.clearTrackedObjects();
                     let true_a = null, true_e = null;
                     if (data.orbit && data.orbit.elements) {
                         const getEl = (n) => { const el = data.orbit.elements.find(e => e.name === n); return el ? parseFloat(el.value) : null; };
                         true_a = getEl('a'); true_e = getEl('e');
                     }
                     
-                    const newMesh = addTrackedObject(data.object.fullname, true, null, true_a, true_e);
+                    const newMesh = window.addTrackedObject(data.object.fullname, true, null, true_a, true_e);
                     
                     loadingText.innerText = data.simulated ? `[SIMULATED] ${data.object.fullname}` : `[LOCKED] ${data.object.fullname}`;
                     loadingText.style.color = data.simulated ? "#ffcc00" : "#00ffcc";
@@ -1328,7 +1548,7 @@
                     await new Promise(r => setTimeout(r, 1200)); 
                     loadingDialog.style.display = 'none';
 
-                    focusOnTarget(newMesh); 
+                    window.focusOnTarget(newMesh); 
 
                 } else {
                     loadingText.innerText = "Object not found.";
@@ -1341,15 +1561,15 @@
                 loadingText.style.color = "#ff4444";
                 setTimeout(() => { loadingDialog.style.display = 'none'; }, 2000);
             }
-        }
+        };
 
-        async function fetchForeignObject() {
+        window.fetchForeignObject = async function() {
             const dist = document.getElementById('dist-select').value;
             let limit = parseInt(document.getElementById('obj-limit').value) || 5;
             
             document.getElementById('menu-main').style.display = 'none';
             document.getElementById('tracker-panel').style.display = 'none';
-            unfocusTarget();
+            window.unfocusTarget();
 
             const loadingDialog = document.getElementById('neo-loading-dialog');
             const loadingText = document.getElementById('neo-loading-text');
@@ -1361,7 +1581,7 @@
                 await new Promise(r => setTimeout(r, 800)); 
                 const today = new Date().toISOString().split('T')[0];
                 const targetUrl = `${NASA_API_BASE}/cad.api?dist-max=${dist}&date-min=${today}&limit=${limit}`;
-                const data = await fetchWithFallback(targetUrl);
+                const data = await window.fetchWithFallback(targetUrl);
                 
                 if (data.data && data.data.length > 0) {
                     loadingText.innerText = data.simulated ? "SCAN COMPLETE (OFFLINE CACHE)" : "SCAN COMPLETE (LIVE DATA)";
@@ -1369,9 +1589,9 @@
                     
                     await new Promise(r => setTimeout(r, 1200)); 
                     loadingDialog.style.display = 'none';
-                    clearTrackedObjects();
+                    window.clearTrackedObjects();
                     
-                    data.data.forEach(item => addTrackedObject(item[0], true, parseFloat(item[4])));
+                    data.data.forEach(item => window.addTrackedObject(item[0], true, parseFloat(item[4]), null, null, item[10] ? parseFloat(item[10]) : null));
                     
                     const statusColor = data.simulated ? "#ffcc00" : "#ff4444";
                     const statusText = data.simulated ? "NEOs (CACHE)" : "NEOs (LIVE)";
@@ -1407,11 +1627,11 @@
                 loadingText.style.color = "#ff4444";
                 setTimeout(() => { loadingDialog.style.display = 'none'; }, 2000);
             }
-        }
+        };
 
         // --- Space Station Tracker ---
-        function openSatTracker() {
-            if(isPlaying) togglePlay(); 
+        window.openSatTracker = function() {
+            if(isPlaying) window.togglePlay(); 
             document.getElementById('sat-dialog').style.display = 'block';
             document.getElementById('sat-list-view').style.display = 'block';
             document.getElementById('sat-detail-view').style.display = 'none';
@@ -1420,22 +1640,22 @@
             let html = "";
             satDatabase.forEach(sat => {
                 html += `
-                    <div class="result-item" onclick="fetchStationData('${sat.id}')">
+                    <div class="result-item" onclick="window.fetchStationData('${sat.id}')">
                         <div class="result-name" style="color:#00ffcc;">${sat.name}</div>
                         <div class="result-desc">Alt: ${sat.orbitHeight} | Operator: ${sat.owner}</div>
                     </div>
                 `;
             });
             list.innerHTML = html;
-        }
+        };
 
-        function showSatList() {
+        window.showSatList = function() {
             document.getElementById('sat-detail-view').style.display = 'none';
             document.getElementById('sat-list-view').style.display = 'block';
             document.getElementById('sat-dialog-title').innerText = "ORBITAL DATABASE";
-        }
+        };
 
-        async function fetchStationData(id, forceRefresh = false) {
+        window.fetchStationData = async function(id, forceRefresh = false) {
             activeSatConfig = satDatabase.find(s => s.id === id);
             
             document.getElementById('sat-list-view').style.display = 'none';
@@ -1448,12 +1668,12 @@
                 if (!forceRefresh && satTelemetryCache.data && (now - satTelemetryCache.timestamp < CACHE_DURATION_MS)) {
                     latestStationData = satTelemetryCache.data;
                     document.getElementById('cache-notice').innerText = "Data verified. Cache active to preserve bandwidth.";
-                    setTimeout(() => updateSatDialogUI(), 400); 
+                    setTimeout(() => window.updateSatDialogUI(), 400); 
                 } else {
-                    await fetchLiveISSData(false);
+                    await window.fetchLiveISSData(false);
                 }
             } else {
-                generateSimulatedStationData(false);
+                window.generateSimulatedStationData(false);
                 try {
                     const geoRes = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latestStationData.latitude}&longitude=${latestStationData.longitude}&localityLanguage=en`);
                     const geoData = await geoRes.json();
@@ -1463,15 +1683,15 @@
                 } catch(e) { latestStationData.locationText = "Unknown Region"; }
                 
                 document.getElementById('cache-notice').innerText = "Using Keplerian Math. Location extrapolated.";
-                setTimeout(() => updateSatDialogUI(), 400);
+                setTimeout(() => window.updateSatDialogUI(), 400);
             }
-        }
+        };
 
-        function forceRefreshSatData() {
-            fetchStationData(activeSatConfig.id, true);
-        }
+        window.forceRefreshSatData = function() {
+            window.fetchStationData(activeSatConfig.id, true);
+        };
 
-        function closeSatTracker() {
+        window.closeSatTracker = function() {
             document.getElementById('sat-dialog').style.display = 'none';
             const earthMesh = getEarth();
             if (satOrbitGroup && earthMesh) {
@@ -1488,11 +1708,11 @@
                 if (issTrailLine.material) issTrailLine.material.dispose();
                 issTrailLine = null;
             }
-            unfocusTarget();
+            window.unfocusTarget();
             isTrailActive = false;
-        }
+        };
 
-        async function fetchLiveISSData(isBackground = false) {
+        window.fetchLiveISSData = async function(isBackground = false) {
             try {
                 const res = await fetch("https://api.wheretheiss.at/v1/satellites/25544");
                 const data = await res.json();
@@ -1511,9 +1731,9 @@
                 
                 if (!isBackground) {
                     document.getElementById('cache-notice').innerText = "Live Telemetry Fetched. Cache Updated.";
-                    updateSatDialogUI();
+                    window.updateSatDialogUI();
                 } else {
-                    if (document.getElementById('sat-info-dialog').style.display === 'block') showSatInfo();
+                    if (document.getElementById('sat-info-dialog').style.display === 'block') window.showSatInfo();
                 }
             } catch(e) {
                 if (!isBackground) {
@@ -1522,9 +1742,9 @@
                     document.getElementById('sat-detail-view').style.display = 'block';
                 }
             }
-        }
+        };
 
-        function generateSimulatedStationData(preserveOldText = false) {
+        window.generateSimulatedStationData = function(preserveOldText = false) {
             const timeFactor = Date.now() / 1000;
             const periodSec = activeSatConfig.period * 60;
             const phase = (timeFactor % periodSec) / periodSec; 
@@ -1559,9 +1779,9 @@
                 velocity: parseFloat(activeSatConfig.speed) / 0.621371 * 3600,
                 locationText: locText, simulated: true, exactVector: pos 
             };
-        }
+        };
 
-        function updateSatDialogUI() {
+        window.updateSatDialogUI = function() {
             document.getElementById('sat-loading-view').style.display = 'none';
             document.getElementById('sat-detail-view').style.display = 'block';
             document.getElementById('sat-dialog-title').innerText = "STATION INTEL";
@@ -1582,11 +1802,11 @@
                 <div class="info-stat"><span class="info-label">Altitude:</span> <span class="info-val">${altMiles} miles</span></div>
                 <div class="info-stat"><span class="info-label">Velocity:</span> <span class="info-val">${velMiles} mph</span></div>
             `;
-        }
+        };
 
-        function findSatOrbit() {
+        window.findSatOrbit = function() {
             document.getElementById('sat-dialog').style.display = 'none';
-            unfocusTarget();
+            window.unfocusTarget();
             document.getElementById('menu-main').style.display = 'none';
             document.getElementById('sat-control-menu').style.display = 'block';
 
@@ -1659,7 +1879,7 @@
                             
                             new TWEEN.Tween(camera.position).to({ x: idealCamPos.x, y: idealCamPos.y, z: idealCamPos.z }, 1500).easing(TWEEN.Easing.Cubic.InOut)
                                 .onComplete(() => {
-                                    launchOrbitScanner();
+                                    window.launchOrbitScanner();
                                 })
                                 .start();
                         }
@@ -1672,22 +1892,22 @@
             
             liveTrackingInterval = setInterval(() => {
                 if(activeSatConfig.live) {
-                    fetchLiveISSData(true);
+                    window.fetchLiveISSData(true);
                 } else {
-                    generateSimulatedStationData(true);
+                    window.generateSimulatedStationData(true);
                     fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latestStationData.latitude}&longitude=${latestStationData.longitude}&localityLanguage=en`)
                         .then(res => res.json())
                         .then(geoData => {
                             if (geoData.principalSubdivision && geoData.countryName) latestStationData.locationText = `${geoData.principalSubdivision}, ${geoData.countryName}`;
                             else if (geoData.locality) latestStationData.locationText = geoData.locality;
                             else latestStationData.locationText = "Over open ocean";
-                            if (document.getElementById('sat-info-dialog').style.display === 'block') showSatInfo();
+                            if (document.getElementById('sat-info-dialog').style.display === 'block') window.showSatInfo();
                         }).catch(e => { });
                 }
             }, 5000);
-        }
+        };
 
-        function freeMoveCamera() {
+        window.freeMoveCamera = function() {
             isCameraLockedToSat = false;
             const earthMesh = getEarth();
             if (earthMesh) {
@@ -1698,9 +1918,9 @@
                     new TWEEN.Tween(controls.target).to({ x: earthPos.x, y: earthPos.y, z: earthPos.z }, 1000).easing(TWEEN.Easing.Quadratic.Out).start();
                 }
             }
-        }
+        };
 
-        function launchOrbitScanner() {
+        window.launchOrbitScanner = function() {
             scannerGroup = new THREE.Group();
             scannerArrows = []; 
             
@@ -1746,9 +1966,32 @@
             }
                 
             isTrailActive = true; 
-        }
+        };
 
-        function forceEndCinematic() {
+        window.showSatInfo = function() {
+            if (!activeSatConfig) return;
+            document.getElementById('sat-info-dialog').style.display = 'block';
+            document.getElementById('sat-info-title').innerText = activeSatConfig.name;
+            
+            const latStr = latestStationData && latestStationData.latitude ? latestStationData.latitude.toFixed(4) + "°" : "N/A";
+            const lonStr = latestStationData && latestStationData.longitude ? latestStationData.longitude.toFixed(4) + "°" : "N/A";
+            const locStr = latestStationData && latestStationData.locationText ? latestStationData.locationText : "Unknown Region";
+            const altMiles = latestStationData && latestStationData.altitude ? (latestStationData.altitude * 0.621371).toFixed(1) + " miles" : activeSatConfig.orbitHeight;
+            const velMiles = latestStationData && latestStationData.velocity ? (latestStationData.velocity * 0.621371).toFixed(0) + " mph" : activeSatConfig.speed;
+
+            document.getElementById('sat-info-content').innerHTML = `
+                <div style="margin-bottom: 8px;"><strong style="color:#00ffcc;">Operator:</strong> ${activeSatConfig.owner}</div>
+                <div style="margin-bottom: 8px;"><strong style="color:#00ffcc;">Location:</strong> ${locStr}</div>
+                <div style="margin-bottom: 8px;"><strong style="color:#00ffcc;">Coordinates:</strong> ${latStr}, ${lonStr}</div>
+                <div style="margin-bottom: 8px;"><strong style="color:#00ffcc;">Altitude:</strong> ${altMiles}</div>
+                <div style="margin-bottom: 8px;"><strong style="color:#00ffcc;">Velocity:</strong> ${velMiles}</div>
+                <div style="margin-top: 15px; border-top: 1px dashed rgba(255,255,255,0.2); padding-top: 15px; color: #ffcc00; font-style: italic;">
+                    ${activeSatConfig.desc}
+                </div>
+            `;
+        };
+
+        window.forceEndCinematic = function() {
             const skipBtn = document.getElementById('skip-intro-btn');
             if (skipBtn) skipBtn.style.display = 'none';
 
@@ -1805,18 +2048,18 @@
                         new TWEEN.Tween(camera.position).to({ x: 0, y: 50, z: 80 }, 2500)
                             .easing(TWEEN.Easing.Cubic.Out)
                             .onComplete(() => {
-                                endCinematicState();
+                                window.endCinematicState();
                             })
                             .start();
 
                     }, 150);
                 }, 700);
             } else {
-                endCinematicState();
+                window.endCinematicState();
             }
-        }
+        };
 
-        function endCinematicState() {
+        window.endCinematicState = function() {
             isIntroPlaying = false;
             
             if (camera) {
@@ -1848,7 +2091,7 @@
                 solarSystemGroup.scale.set(1, 1, 1);
             }
             if (cinematicGroup && scene) scene.remove(cinematicGroup); 
-        }
+        };
 
         async function runCinematicIntro() {
             const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -1946,9 +2189,9 @@
                 new TWEEN.Tween(camera.position).to({ x: 0, y: 50, z: 80 }, 3000).easing(TWEEN.Easing.Cubic.Out).start();
                 await sleep(3000);
                 
-                endCinematicState();
+                window.endCinematicState();
             } else {
-                endCinematicState();
+                window.endCinematicState();
             }
         }
 
@@ -2137,7 +2380,7 @@
                 
                 updatePlanetsFunc(); 
                 
-                if (focusedTarget && !isCameraLockedToSat) {
+                if (focusedTarget && !isCameraLockedToSat && (!window.activeTrajectoryMeteor || !window.trajTargetTween || !window.trajTargetTween.isPlaying())) {
                     const targetPos = new THREE.Vector3();
                     focusedTarget.getWorldPosition(targetPos);
                     controls.target.copy(targetPos);
@@ -2317,10 +2560,45 @@
                         milkyWayGroup.rotation.z += 0.001;
                     }
                 }
+
+                // --- MANUAL TRAJECTORY ANIMATION LOOP ---
+                if (window.activeTrajectoryMeteor && window.trajectoryEarthPos && window.trajectorySpawnPos) {
+                    if (window.isTrajectoryPlaying) {
+                        window.trajectoryProgress += 0.002; 
+                        
+                        if (window.trajectoryProgress >= 1.0) {
+                            window.trajectoryProgress = 1.0;
+                            window.isTrajectoryPlaying = false;
+                            document.getElementById('traj-play-btn').innerText = "PLAY";
+                            
+                            // Trigger impact flash only once
+                            if (!window.activeTrajectoryMeteor.userData.hasImpacted) {
+                                window.activeTrajectoryMeteor.userData.hasImpacted = true;
+                                const flash = new THREE.PointLight(0xffdd00, 15, 100);
+                                flash.position.copy(window.trajectoryEarthPos);
+                                solarSystemGroup.add(flash);
+                                setTimeout(() => solarSystemGroup.remove(flash), 200);
+                            }
+                        } else {
+                            window.activeTrajectoryMeteor.userData.hasImpacted = false;
+                        }
+                        document.getElementById('traj-slider').value = window.trajectoryProgress * 100;
+                    }
+
+                    // Move asteroid along mathematical line
+                    window.activeTrajectoryMeteor.position.lerpVectors(window.trajectorySpawnPos, window.trajectoryEarthPos, window.trajectoryProgress);
+                    window.activeTrajectoryMeteor.lookAt(window.trajectoryEarthPos);
+                    
+                    // Spin the tumbling rock
+                    if (window.activeTrajectoryMeteor.children.length > 0) {
+                        window.activeTrajectoryMeteor.children[0].rotation.x += 0.05;
+                        window.activeTrajectoryMeteor.children[0].rotation.z += 0.05;
+                    }
+                }
             } 
             
             animate();
-            updateDailyDatabase();
+            window.updateDailyDatabase();
             runCinematicIntro();
         };
     </script>
