@@ -81,15 +81,6 @@
         }
         #skip-intro-btn:hover { background: #ff4444; box-shadow: 0 0 15px rgba(255, 68, 68, 0.6); }
 
-        /* Cinematic Lore Text Overlay */
-        #lore-text-overlay {
-            position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); width: 80%; max-width: 800px;
-            text-align: center; color: #ffcc00; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            font-size: 1.1rem; line-height: 1.6; letter-spacing: 1px; z-index: 9997; opacity: 0;
-            pointer-events: none; transition: opacity 1.5s ease; text-shadow: 0 2px 10px rgba(0,0,0,1);
-            background: rgba(0, 0, 0, 0.6); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,204,0,0.3);
-        }
-
         /* Glassmorphism UI */
         #ui-container { position: absolute; top: 20px; right: 20px; z-index: 10; display: flex; flex-direction: column; align-items: flex-end; opacity: 0; pointer-events: none; transition: opacity 1.5s ease; }
         
@@ -435,7 +426,8 @@
         var cinematicLookAt; 
         
         // --- FORMATION EFFECT GLOBALS ---
-        var protoDiskGroup, sunAccretionGroup;
+        var protoDiskGroup, sunAccretionGroup, violentCloudGroup;
+        var cloudTexCache;
         var isAccretingSun = false;
         var ns1, ns2, neutronStarGroup;
         var isSimulatingNeutrons = false;
@@ -661,6 +653,20 @@
             ctx.fillRect(0, 0, 64, 64);
             return new THREE.CanvasTexture(canvas);
         }
+        
+        window.createCloudTexture = function() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128; canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            const grad = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+            grad.addColorStop(0, 'rgba(255, 200, 150, 1)');
+            grad.addColorStop(0.2, 'rgba(255, 100, 50, 0.8)');
+            grad.addColorStop(0.6, 'rgba(100, 0, 150, 0.3)');
+            grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 128, 128);
+            return new THREE.CanvasTexture(canvas);
+        }
 
         window.createGalaxySpriteTexture = function(colorHex) {
             const canvas = document.createElement('canvas');
@@ -709,7 +715,7 @@
             scene.add(cinematicGroup);
 
             deepFieldGroup = new THREE.Group();
-            deepFieldGroup.visible = false; 
+            deepFieldGroup.visible = false; // Starts hidden in the void
             cinematicGroup.add(deepFieldGroup);
 
             const galaxyColors = [0xffaa55, 0x55aaff, 0xffffff, 0xff55aa, 0x88ccff, 0xffddaa];
@@ -890,6 +896,7 @@
                 if (ns1) ns1.position.set(nsRadius * Math.cos(nsAngle), 0, nsRadius * Math.sin(nsAngle));
                 if (ns2) ns2.position.set(-nsRadius * Math.cos(nsAngle), 0, -nsRadius * Math.sin(nsAngle));
             }
+            
             if (isAccretingSun && sunAccretionGroup && sunAccretionGroup.visible) {
                 const positions = sunAccretionGroup.geometry.attributes.position.array;
                 for(let i=0; i<positions.length; i+=3) {
@@ -899,8 +906,29 @@
                 }
                 sunAccretionGroup.geometry.attributes.position.needsUpdate = true;
             }
+            
             if (protoDiskGroup && protoDiskGroup.visible) {
                 protoDiskGroup.rotation.y -= 0.005;
+            }
+
+            // --- THE VIOLENT CLOUD BOILING EFFECT ---
+            if (violentCloudGroup && violentCloudGroup.visible) {
+                violentCloudGroup.rotation.y -= 0.01; 
+                const t = Date.now() * 0.002;
+                const pos = violentCloudGroup.geometry.attributes.position.array;
+                const start = violentCloudGroup.userData.startPos;
+                
+                for(let i=0; i<4000; i++) {
+                    pos[i*3+1] = start[i*3+1] + Math.sin(t + i) * 10; 
+                }
+                violentCloudGroup.geometry.attributes.position.needsUpdate = true;
+                
+                if(Math.random() > 0.95) {
+                    violentCloudGroup.material.opacity = 0.6 + Math.random() * 0.4;
+                } else {
+                    violentCloudGroup.material.opacity -= 0.05;
+                    if(violentCloudGroup.material.opacity < 0.4) violentCloudGroup.material.opacity = 0.4;
+                }
             }
 
             planetMeshes.forEach((planetObj, index) => {
@@ -2531,9 +2559,10 @@
             await sleep(150);
             window.triggerFlash(false, 1000);
             
-            // Phase 3: Reveal Spinning Protoplanetary Disk
+            // Phase 3: Reveal Spinning Protoplanetary Disk AND Violent Clouds
             if(protoDiskGroup) protoDiskGroup.visible = true;
-            
+            if(violentCloudGroup) violentCloudGroup.visible = true;
+
             // Phase 4: Sequential Planetesimal Collisions
             for (let i = 0; i < planetConfigs.length; i++) {
                 // Background sync finishes early, so this passes instantly and keeps the beautiful pacing!
@@ -2550,7 +2579,7 @@
                 const standardChildren = [...pGroup.children];
                 standardChildren.forEach(c => c.visible = false);
                 
-                // --- NEW: Cinematic Accretion Sequence ---
+                // --- Cinematic Accretion Sequence ---
                 const accCount = 600;
                 const accGeo = new THREE.BufferGeometry();
                 const accPos = new Float32Array(accCount * 3);
@@ -2591,7 +2620,7 @@
                 if (!isIntroPlaying) return;
                 pGroup.remove(accPoints);
 
-                // --- NEW: Cinematic Explosion Flash & Shockwave ---
+                // --- Cinematic Explosion Flash & Shockwave ---
                 const flash = new THREE.PointLight(0xffddaa, 10, pSize * 50);
                 pGroup.add(flash);
                 
@@ -2612,8 +2641,7 @@
                 
                 if(typeof window !== 'undefined' && window.TWEEN) {
                     new TWEEN.Tween(pGroup.scale).to({ x: 1, y: 1, z: 1 }, 1000).easing(TWEEN.Easing.Elastic.Out).start();
-                    // --- NEW: Smooth Orbital Blending ---
-                    // Lerps from J2000 math position to Live NASA position over 2.2 seconds
+                    // Smooth Orbital Blending
                     new TWEEN.Tween(planetConfigs[i]).to({ formationBlend: 1 }, 2200).easing(TWEEN.Easing.Cubic.InOut).start();
                 }
                     
@@ -2635,7 +2663,7 @@
                 await sleep(400); 
             }
             
-            // Phase 5: Condense Protoplanetary Disk into Asteroid Belt
+            // Phase 5: Condense Protoplanetary Disk into Asteroid Belt AND Collapse the Clouds into the Sun
             if(typeof window !== 'undefined' && window.TWEEN && protoDiskGroup && beltGroup) {
                 beltGroup.visible = true;
                 beltGroup.scale.set(1, 1, 1);
@@ -2673,6 +2701,37 @@
                 }).onComplete(() => {
                     protoDiskGroup.visible = false;
                 }).start();
+
+                // PLUS: Aggressive swirl-in for the violent clouds
+                if(violentCloudGroup) {
+                    const cloudCondenseObj = { val: 0 };
+                    new TWEEN.Tween(cloudCondenseObj).to({ val: 1 }, 3000).easing(TWEEN.Easing.Exponential.In).onUpdate(() => {
+                        const pos = violentCloudGroup.geometry.attributes.position.array;
+                        const start = violentCloudGroup.userData.startPos;
+                        const t = cloudCondenseObj.val;
+                        
+                        for(let j=0; j<4000; j++) {
+                            const currentR = Math.sqrt(start[j*3]**2 + start[j*3+2]**2);
+                            const currentTheta = Math.atan2(start[j*3+2], start[j*3]) + (t * Math.PI * 4); 
+                            
+                            const newR = currentR * (1 - t);
+                            pos[j*3] = newR * Math.cos(currentTheta);
+                            pos[j*3+1] = start[j*3+1] * (1 - t);
+                            pos[j*3+2] = newR * Math.sin(currentTheta);
+                        }
+                        violentCloudGroup.geometry.attributes.position.needsUpdate = true;
+                        
+                        // Fade out at the very end as it gets eaten by the sun
+                        if(t > 0.8) {
+                            violentCloudGroup.material.opacity = (1 - t) * 5 * 0.6; 
+                        }
+                    }).onComplete(() => {
+                        violentCloudGroup.visible = false;
+                        // Trigger a massive final flash as the gas is consumed
+                        window.triggerFlash(true, 100);
+                        setTimeout(() => window.triggerFlash(false, 1500), 100);
+                    }).start();
+                }
             }
                 
             await sleep(4000);
@@ -2704,9 +2763,6 @@
                 intro.style.opacity = '0';
                 setTimeout(() => { if (intro) intro.style.display = 'none'; }, 500);
             }
-            
-            const loreText = document.getElementById('lore-text-overlay');
-            if(loreText) loreText.style.opacity = '0';
             
             if (typeof window !== 'undefined' && window.TWEEN) {
                 window.TWEEN.removeAll();
@@ -2827,9 +2883,18 @@
             
             if(protoDiskGroup) protoDiskGroup.visible = false;
             if(sunAccretionGroup) sunAccretionGroup.visible = false;
+            if(violentCloudGroup) violentCloudGroup.visible = false;
+            
+            // In case user skipped before ephemeris started, force it to run now in background
+            if(planetConfigs[0].isReady === false) {
+                 window.syncPlanetaryEphemeris();
+            }
         };
 
         window.runCinematicIntro = async function() {
+            // Kick off background ephemeris sync IMMEDIATELY at the start of the cinematic
+            window.syncPlanetaryEphemeris();
+            
             const sleep = ms => new Promise(r => setTimeout(r, ms));
             
             await sleep(2500);
@@ -2984,6 +3049,7 @@
             textureLoader = new THREE.TextureLoader();
             textureLoader.setCrossOrigin("Anonymous");
             glowTexCache = window.createGlowTexture();
+            cloudTexCache = window.createCloudTexture();
             raycaster = new THREE.Raycaster();
             mouse = new THREE.Vector2();
             pointerDownPos = new THREE.Vector2();
@@ -3081,6 +3147,33 @@
             protoDiskGroup.userData = { startPos: pDiskStart, targetPos: pDiskTarget };
             solarSystemGroup.add(protoDiskGroup);
             protoDiskGroup.visible = false;
+
+            // --- NEW: Violent Cloud Nebula ---
+            const cCount = 4000;
+            const cGeo = new THREE.BufferGeometry();
+            const cPos = new Float32Array(cCount * 3);
+            const cCol = new Float32Array(cCount * 3);
+            const cStart = new Float32Array(cCount * 3);
+            
+            for(let i=0; i<cCount; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const r = 15 + Math.pow(Math.random(), 2) * 120;
+                const x = r * Math.cos(angle);
+                const y = (Math.random() - 0.5) * 30 * (1 - r/150); 
+                const z = r * Math.sin(angle);
+                
+                cPos[i*3] = x; cPos[i*3+1] = y; cPos[i*3+2] = z;
+                cStart[i*3] = x; cStart[i*3+1] = y; cStart[i*3+2] = z;
+                
+                const c = new THREE.Color().setHSL(0.05 + Math.random()*0.1, 0.9, 0.3 + Math.random()*0.3);
+                cCol[i*3] = c.r; cCol[i*3+1] = c.g; cCol[i*3+2] = c.b;
+            }
+            cGeo.setAttribute('position', new THREE.BufferAttribute(cPos, 3));
+            cGeo.setAttribute('color', new THREE.BufferAttribute(cCol, 3));
+            violentCloudGroup = new THREE.Points(cGeo, new THREE.PointsMaterial({ size: 45.0, vertexColors: true, map: cloudTexCache, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0.6 }));
+            violentCloudGroup.userData = { startPos: cStart };
+            solarSystemGroup.add(violentCloudGroup);
+            violentCloudGroup.visible = false;
 
             const sAccGeo = new THREE.BufferGeometry();
             const sAccPos = new Float32Array(5000 * 3);
