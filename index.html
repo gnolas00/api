@@ -942,25 +942,15 @@
                 const active_e = isSynced ? p.e_synced : (p.e_default !== undefined ? p.e_default : p.e);
                 const activeDays = isSynced ? daysSinceSync : daysSinceJ2000;
                 
-                const M = active_M0 + (2 * Math.PI * activeDays / p.periodDays);
+                // Applying anomaly offset for the cinematic spin deceleration
+                const M = active_M0 + (2 * Math.PI * activeDays / p.periodDays) + (p.anomalyOffset || 0);
                 const v = M + 2 * active_e * Math.sin(M) + 1.25 * active_e * active_e * Math.sin(2 * M);
                 const currentAngle = active_w + v;
                 
                 const r = p.a * (1 - active_e * active_e) / (1 + active_e * Math.cos(v));
 
-                const x_j2000 = r * Math.cos(currentAngle);
-                const z_j2000 = r * Math.sin(currentAngle);
-                
-                // Seamless Blend to prevent snapping (formationBlend goes 0 -> 1 during formation)
-                if (typeof THREE !== 'undefined' && p.formationBlend !== undefined) {
-                    planetObj.position.x = x_j2000;
-                    planetObj.position.z = z_j2000;
-                    // Note: If we wanted to blend between two positions, we would calculate both.
-                    // Since we pre-fetched, we only calculate the final accurate position and spawn it there directly!
-                } else {
-                    planetObj.position.x = x_j2000;
-                    planetObj.position.z = z_j2000;
-                }
+                planetObj.position.x = r * Math.cos(currentAngle);
+                planetObj.position.z = r * Math.sin(currentAngle);
                 
                 if(window.updateDynamicTrail) {
                     window.updateDynamicTrail(planetObj, planetObj.position.clone(), p.color, true);
@@ -977,7 +967,8 @@
                             const mData = p.moons[moonDataIndex];
                             if(mData) {
                                 const activeDays = (p.hasEphemeris && window.systemEpochMS !== J2000_MS) ? daysSinceSync : daysSinceJ2000;
-                                const mAngle = activeDays * mData.speed * 10 + moonDataIndex;
+                                // Multiply anomaly offset by 8 so moons violently whip around the planet during accretion
+                                const mAngle = activeDays * mData.speed * 10 + moonDataIndex + ((p.anomalyOffset || 0) * 8);
                                 child.position.x = mData.dist * Math.cos(mAngle);
                                 child.position.z = mData.dist * Math.sin(mAngle);
                                 
@@ -2642,8 +2633,10 @@
                 
                 if(typeof window !== 'undefined' && window.TWEEN) {
                     new TWEEN.Tween(pGroup.scale).to({ x: 1, y: 1, z: 1 }, 1000).easing(TWEEN.Easing.Elastic.Out).start();
-                    // Smooth Orbital Blending
-                    new TWEEN.Tween(planetConfigs[i]).to({ formationBlend: 1 }, 2200).easing(TWEEN.Easing.Cubic.InOut).start();
+                    // --- NEW: Smooth Orbital Spin Settling ---
+                    // Fast-forward them 8 orbits back, and tween them perfectly into their live slot
+                    planetConfigs[i].anomalyOffset = -Math.PI * 16; 
+                    new TWEEN.Tween(planetConfigs[i]).to({ anomalyOffset: 0 }, 6000 + (i * 400)).easing(TWEEN.Easing.Cubic.Out).start();
                 }
                     
                 await sleep(500);
@@ -2877,7 +2870,7 @@
             planetMeshes.forEach((p, idx) => { 
                 p.visible = true; 
                 p.scale.set(1,1,1);
-                planetConfigs[idx].formationBlend = 1; 
+                planetConfigs[idx].anomalyOffset = 0; 
                 if(p.userData.orbitLine) p.userData.orbitLine.visible = true; 
                 if(p.userData.moonsGroup) p.userData.moonsGroup.visible = true;
             });
