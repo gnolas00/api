@@ -1658,9 +1658,9 @@
         };
 
         window.fetchWithFallback = async function(targetUrl) {
-            // --- DYNAMIC CACHE BUSTER ---
-            const bustedUrl = targetUrl + (targetUrl.includes('?') ? '&' : '?') + 'cb=' + Date.now();
-            const encodedUrl = encodeURIComponent(bustedUrl);
+            // NASA APIs strictly validate query parameters. Adding a custom cache-buster like '&cb=123'
+            // causes a 400 Bad Request error. We must use the exact URL and rely on fetch headers.
+            const encodedUrl = encodeURIComponent(targetUrl);
 
             // 1. VERCEL PROXY PIPELINE (Ensures Vercel is tried FIRST)
             let localProxyUrl = null;
@@ -1681,7 +1681,7 @@
 
             if (localProxyUrl) {
                 try {
-                    const response = await fetch(localProxyUrl);
+                    const response = await fetch(localProxyUrl, { cache: 'no-store' });
                     if (response.ok) {
                         const contentType = response.headers.get("content-type");
                         if (contentType && contentType.indexOf("application/json") !== -1) {
@@ -1697,7 +1697,8 @@
 
             // 2. DIRECT FETCH 
             try {
-                const response = await fetch(bustedUrl);
+                // Using cache: 'no-store' forces the browser to re-request without appending illegal URL params
+                const response = await fetch(targetUrl, { cache: 'no-store' });
                 if (response.ok) {
                     const data = await response.json();
                     if (data && (data.data || data.object || data.signature || data.count !== undefined || data.result)) {
@@ -1709,15 +1710,15 @@
             
             // 3. PUBLIC CORS PROXIES (Expanded list with mixed encoding strategies)
             const PROXIES = [
-                `https://api.codetabs.com/v1/proxy?quest=${bustedUrl}`,      // Prefers unencoded
+                `https://api.codetabs.com/v1/proxy?quest=${targetUrl}`,      // Prefers unencoded
                 `https://api.allorigins.win/raw?url=${encodedUrl}`,          // Prefers encoded
                 `https://corsproxy.io/?${encodedUrl}`,                       // Prefers encoded
-                `https://thingproxy.freeboard.io/fetch/${bustedUrl}`         // Fallback legacy proxy
+                `https://thingproxy.freeboard.io/fetch/${targetUrl}`         // Fallback legacy proxy
             ];
             
             for (let p = 0; p < PROXIES.length; p++) {
                 try {
-                    const response = await fetch(PROXIES[p]);
+                    const response = await fetch(PROXIES[p], { cache: 'no-store' });
                     if (response.ok) {
                         const text = await response.text();
                         try {
