@@ -81,6 +81,15 @@
         }
         #skip-intro-btn:hover { background: #ff4444; box-shadow: 0 0 15px rgba(255, 68, 68, 0.6); }
 
+        /* Cinematic Lore Text Overlay */
+        #lore-text-overlay {
+            position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); width: 80%; max-width: 800px;
+            text-align: center; color: #ffcc00; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 1.1rem; line-height: 1.6; letter-spacing: 1px; z-index: 9997; opacity: 0;
+            pointer-events: none; transition: opacity 1.5s ease; text-shadow: 0 2px 10px rgba(0,0,0,1);
+            background: rgba(0, 0, 0, 0.6); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,204,0,0.3);
+        }
+
         /* Glassmorphism UI */
         #ui-container { position: absolute; top: 20px; right: 20px; z-index: 10; display: flex; flex-direction: column; align-items: flex-end; opacity: 0; pointer-events: none; transition: opacity 1.5s ease; }
         
@@ -700,7 +709,7 @@
             scene.add(cinematicGroup);
 
             deepFieldGroup = new THREE.Group();
-            deepFieldGroup.visible = false; // Starts hidden in the void
+            deepFieldGroup.visible = false; 
             cinematicGroup.add(deepFieldGroup);
 
             const galaxyColors = [0xffaa55, 0x55aaff, 0xffffff, 0xff55aa, 0x88ccff, 0xffddaa];
@@ -2332,6 +2341,7 @@
             `;
         };
 
+        // --- THE SEQUENTIAL FORMATION AND SYNC ENGINE ---
         window.syncPlanetaryEphemeris = async function() {
             const ephemStatus = document.getElementById('ephemeris-status');
             if (ephemStatus) {
@@ -2341,15 +2351,53 @@
                 ephemStatus.style.borderColor = 'rgba(255,204,0,0.3)';
             }
 
+            const todayStr = new Date().toISOString().split('T')[0];
+            const tomorrowStr = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+            const cacheKey = 'nolasco_ephemeris_cache';
+
+            // 1. INSTANT LOCAL STORAGE CACHE CHECK
+            try {
+                const cached = localStorage.getItem(cacheKey);
+                if (cached) {
+                    const cacheData = JSON.parse(cached);
+                    // If the cache was stored today, use it immediately!
+                    if (cacheData.date === todayStr && cacheData.planets) {
+                        let cacheValid = true;
+                        for (let i = 0; i < planetConfigs.length; i++) {
+                            const p = planetConfigs[i];
+                            const pCache = cacheData.planets[p.name];
+                            if (pCache) {
+                                p.M0_synced = pCache.M0_synced;
+                                p.w_synced = pCache.w_synced;
+                                p.e_synced = pCache.e_synced;
+                                p.hasEphemeris = true;
+                                p.isReady = true; // Flags the animation to instantly spawn the planet
+                            } else {
+                                cacheValid = false;
+                            }
+                        }
+                        
+                        if (cacheValid) {
+                            window.systemEpochMS = cacheData.epochMS || Date.now();
+                            if (ephemStatus) {
+                                ephemStatus.innerHTML = '● EPHEMERIS: SECURE (CACHED)';
+                                ephemStatus.style.color = '#00ffcc';
+                                ephemStatus.style.borderColor = 'rgba(0,255,204,0.3)';
+                                setTimeout(() => { ephemStatus.style.opacity = '0'; }, 5000);
+                            }
+                            return; // Exit early, skipping network requests completely!
+                        }
+                    }
+                }
+            } catch (e) { console.warn("Cache read failed.", e); }
+
+            // 2. HIGH-SPEED CONCURRENT NASA FETCH
             try {
                 let syncSuccess = false;
-                const todayStr = new Date().toISOString().split('T')[0];
-                const tomorrowStr = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+                const newCacheData = { date: todayStr, epochMS: Date.now(), planets: {} };
 
-                for (let i = 0; i < planetConfigs.length; i++) {
-                    const p = planetConfigs[i];
+                const fetchPlanetData = async (p) => {
                     const url = `https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND='${p.id}'&OBJ_DATA='YES'&MAKE_EPHEM='YES'&EPHEM_TYPE='ELEMENTS'&CENTER='500@10'&STEP_SIZE='1d'&START_TIME='${todayStr}'&STOP_TIME='${tomorrowStr}'`;
-                    
                     try {
                         const data = await window.fetchWithFallback(url);
                         if (data && data.result && !data.simulated) {
@@ -2357,24 +2405,38 @@
                             const wMatch = data.result.match(/W\s*=\s*(-?[\d.E+-]+)/);
                             const eMatch = data.result.match(/EC=\s*(-?[\d.E+-]+)/);
                             
-                            if (maMatch) planetConfigs[i].M0_synced = parseFloat(maMatch[1]) * (Math.PI / 180);
-                            if (wMatch) planetConfigs[i].w_synced = parseFloat(wMatch[1]) * (Math.PI / 180);
-                            if (eMatch) planetConfigs[i].e_synced = parseFloat(eMatch[1]);
+                            if (maMatch) p.M0_synced = parseFloat(maMatch[1]) * (Math.PI / 180);
+                            if (wMatch) p.w_synced = parseFloat(wMatch[1]) * (Math.PI / 180);
+                            if (eMatch) p.e_synced = parseFloat(eMatch[1]);
                             
-                            planetConfigs[i].hasEphemeris = true;
-                            syncSuccess = true;
+                            p.hasEphemeris = true;
+                            newCacheData.planets[p.name] = { M0_synced: p.M0_synced, w_synced: p.w_synced, e_synced: p.e_synced };
+                            return true;
                         }
                     } catch (err) {
                         console.warn(`Failed to sync ${p.name} ephemeris.`);
                     } finally {
-                        planetConfigs[i].isReady = true; 
+                        p.isReady = true; 
                     }
+                    return false;
+                };
+
+                // BATCH PROCESSING: Fetch 4 planets concurrently at a time.
+                // This maximizes speed while keeping requests just under NASA's IP rate limiter.
+                const batchSize = 4;
+                for (let i = 0; i < planetConfigs.length; i += batchSize) {
+                    const batch = planetConfigs.slice(i, i + batchSize);
+                    const results = await Promise.all(batch.map(p => fetchPlanetData(p)));
+                    if (results.some(r => r)) syncSuccess = true;
                     
-                    await new Promise(r => setTimeout(r, 250));
+                    // Tiny 200ms cooldown between batches to protect against HTTP 429 blocks
+                    if (i + batchSize < planetConfigs.length) await new Promise(r => setTimeout(r, 200));
                 }
 
                 if (syncSuccess) {
-                    window.systemEpochMS = Date.now();
+                    window.systemEpochMS = newCacheData.epochMS;
+                    try { localStorage.setItem(cacheKey, JSON.stringify(newCacheData)); } catch(e) {} // Save to local storage
+                    
                     if (ephemStatus) {
                         ephemStatus.innerHTML = '● EPHEMERIS: SECURE';
                         ephemStatus.style.color = '#00ffcc';
@@ -2389,7 +2451,7 @@
                 }
             } catch (e) {
                 console.warn("Fatal Ephemeris failure.");
-                planetConfigs.forEach(p => p.isReady = true);
+                planetConfigs.forEach(p => p.isReady = true); // Failsafe
             }
             
             setTimeout(() => {
@@ -2469,15 +2531,9 @@
             await sleep(150);
             window.triggerFlash(false, 1000);
             
-            // Phase 3: Reveal Spinning Protoplanetary Disk and Lore Text
+            // Phase 3: Reveal Spinning Protoplanetary Disk
             if(protoDiskGroup) protoDiskGroup.visible = true;
-            const loreText = document.getElementById('lore-text-overlay');
-            if(loreText) {
-                loreText.style.opacity = '1';
-                // Automatically fade out exactly after 5 seconds
-                setTimeout(() => { if (loreText) loreText.style.opacity = '0'; }, 5000);
-            }
-
+            
             // Phase 4: Sequential Planetesimal Collisions
             for (let i = 0; i < planetConfigs.length; i++) {
                 // Background sync finishes early, so this passes instantly and keeps the beautiful pacing!
@@ -2490,9 +2546,11 @@
                 const pGroup = planetMeshes[i];
                 pGroup.visible = true;
                 
+                // Hide normal planet assets temporarily
                 const standardChildren = [...pGroup.children];
                 standardChildren.forEach(c => c.visible = false);
                 
+                // --- NEW: Cinematic Accretion Sequence ---
                 const accCount = 600;
                 const accGeo = new THREE.BufferGeometry();
                 const accPos = new Float32Array(accCount * 3);
@@ -2533,6 +2591,7 @@
                 if (!isIntroPlaying) return;
                 pGroup.remove(accPoints);
 
+                // --- NEW: Cinematic Explosion Flash & Shockwave ---
                 const flash = new THREE.PointLight(0xffddaa, 10, pSize * 50);
                 pGroup.add(flash);
                 
@@ -2547,11 +2606,15 @@
                     new TWEEN.Tween(shockMat).to({ opacity: 0 }, 500).easing(TWEEN.Easing.Quadratic.Out).start();
                 }
                 
+                // Unhide actual planet elements and bounce scale up
                 standardChildren.forEach(c => c.visible = true);
                 pGroup.scale.set(0.01, 0.01, 0.01);
                 
                 if(typeof window !== 'undefined' && window.TWEEN) {
                     new TWEEN.Tween(pGroup.scale).to({ x: 1, y: 1, z: 1 }, 1000).easing(TWEEN.Easing.Elastic.Out).start();
+                    // --- NEW: Smooth Orbital Blending ---
+                    // Lerps from J2000 math position to Live NASA position over 2.2 seconds
+                    new TWEEN.Tween(planetConfigs[i]).to({ formationBlend: 1 }, 2200).easing(TWEEN.Easing.Cubic.InOut).start();
                 }
                     
                 await sleep(500);
@@ -2559,6 +2622,7 @@
                 pGroup.remove(flash);
                 pGroup.remove(shockwave);
                 
+                // Paint Orbit Path (Trails behind the planet sequentially)
                 if (pGroup.userData.orbitLine) {
                     pGroup.userData.orbitLine.visible = true;
                     pGroup.userData.orbitLine.material.opacity = 0;
@@ -2567,6 +2631,7 @@
                     }
                 }
                 
+                // Dynamic pacing
                 await sleep(400); 
             }
             
@@ -2575,6 +2640,7 @@
                 beltGroup.visible = true;
                 beltGroup.scale.set(1, 1, 1);
                 
+                // Set the physical rocks to be transparent initially
                 const beltMesh = beltGroup.children[0];
                 if(beltMesh && beltMesh.material) {
                     beltMesh.material.transparent = true;
@@ -2586,6 +2652,7 @@
                     const pos = protoDiskGroup.geometry.attributes.position.array;
                     const start = protoDiskGroup.userData.startPos;
                     const target = protoDiskGroup.userData.targetPos;
+                    
                     const t = condenseObj.val;
                     
                     for(let j=0; j<30000; j++) {
@@ -2595,8 +2662,9 @@
                     }
                     protoDiskGroup.geometry.attributes.position.needsUpdate = true;
                     
+                    // Crossfade the glowing dust into the solid rocks
                     if(t > 0.5) {
-                        const fade = (t - 0.5) * 2; 
+                        const fade = (t - 0.5) * 2; // Scales 0 to 1
                         protoDiskGroup.material.opacity = 1 - fade;
                         if(beltMesh && beltMesh.material) {
                             beltMesh.material.opacity = fade;
@@ -2610,20 +2678,19 @@
             await sleep(4000);
             if (!isIntroPlaying) return;
 
-            // Phase 6: Single Smooth Cinematic Fly-by
+            // Phase 6: Smoothly transition to the interactive solar system view
             if(typeof window !== 'undefined' && window.TWEEN) {
                 if (window.introDriftTween) window.introDriftTween.stop();
                 
                 cinematicLookAt.set(0, 0, 0);
 
-                const sweep = new TWEEN.Tween(camera.position).to({ x: 90, y: 30, z: -70 }, 5000).easing(TWEEN.Easing.Sinusoidal.InOut);
-                const settle = new TWEEN.Tween(camera.position).to({ x: 0, y: 50, z: 80 }, 5000).easing(TWEEN.Easing.Cubic.InOut);
-
-                sweep.chain(settle);
-                sweep.start();
+                new TWEEN.Tween(camera.position)
+                    .to({ x: 0, y: 50, z: 80 }, 4000)
+                    .easing(TWEEN.Easing.Cubic.InOut)
+                    .start();
             }
 
-            await sleep(10000);
+            await sleep(4000);
             if (!isIntroPlaying) return;
             window.endCinematicState();
         };
@@ -2637,6 +2704,9 @@
                 intro.style.opacity = '0';
                 setTimeout(() => { if (intro) intro.style.display = 'none'; }, 500);
             }
+            
+            const loreText = document.getElementById('lore-text-overlay');
+            if(loreText) loreText.style.opacity = '0';
             
             if (typeof window !== 'undefined' && window.TWEEN) {
                 window.TWEEN.removeAll();
@@ -2691,6 +2761,8 @@
 
         window.endCinematicState = function() {
             isIntroPlaying = false;
+            
+            if (window.introDriftTween) window.introDriftTween.stop();
             
             if (starMat) starMat.opacity = 0.8; // Force stars to appear if skipped
 
@@ -2755,17 +2827,9 @@
             
             if(protoDiskGroup) protoDiskGroup.visible = false;
             if(sunAccretionGroup) sunAccretionGroup.visible = false;
-            
-            // In case user skipped before ephemeris started, force it to run now in background
-            if(planetConfigs[0].isReady === false) {
-                 window.syncPlanetaryEphemeris();
-            }
         };
 
         window.runCinematicIntro = async function() {
-            // Kick off background ephemeris sync IMMEDIATELY at the start of the cinematic
-            window.syncPlanetaryEphemeris();
-            
             const sleep = ms => new Promise(r => setTimeout(r, ms));
             
             await sleep(2500);
