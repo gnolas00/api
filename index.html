@@ -1658,62 +1658,39 @@
         };
 
         window.fetchWithFallback = async function(targetUrl) {
-            // NASA APIs strictly validate query parameters. Adding a custom cache-buster like '&cb=123'
-            // causes a 400 Bad Request error. We must use the exact URL and rely on fetch headers.
+            // --- INSTANT MEMORY CACHE ---
+            // Prevents spamming NASA if the exact same request was made recently
+            window.apiMemCache = window.apiMemCache || {};
+            if (window.apiMemCache[targetUrl] && (Date.now() - window.apiMemCache[targetUrl].timestamp < 60000)) {
+                return window.apiMemCache[targetUrl].data;
+            }
+
             const encodedUrl = encodeURIComponent(targetUrl);
 
-            // 1. VERCEL PROXY PIPELINE (Ensures Vercel is tried FIRST)
-            let localProxyUrl = null;
-            if (targetUrl.includes('cad.api')) {
-                const urlParams = new URLSearchParams(targetUrl.split('?')[1]);
-                const distVal = urlParams.get('dist-max') || urlParams.get('dist');
-                const limitVal = urlParams.get('limit') || 5;
-                localProxyUrl = `/api/proxy?dist=${encodeURIComponent(distVal)}&limit=${encodeURIComponent(limitVal)}`;
-            } else if (targetUrl.includes('sbdb.api')) {
-                const urlParams = new URLSearchParams(targetUrl.split('?')[1]);
-                const desVal = urlParams.get('sstr');
-                localProxyUrl = `/api/proxy?des=${encodeURIComponent(desVal)}`;
-            } else if (targetUrl.includes('horizons.api')) {
-                const urlParams = new URLSearchParams(targetUrl.split('?')[1]);
-                const cmd = urlParams.get('COMMAND').replace(/'/g, '');
-                localProxyUrl = `/api/proxy?horizons=${encodeURIComponent(cmd)}`;
-            }
-
-            if (localProxyUrl) {
+            // 1. DIRECT FETCH (With intelligent retry for 429 Too Many Requests)
+            for (let attempt = 0; attempt < 2; attempt++) {
                 try {
-                    const response = await fetch(localProxyUrl, { cache: 'no-store' });
+                    const response = await fetch(targetUrl, { cache: 'no-store' });
                     if (response.ok) {
-                        const contentType = response.headers.get("content-type");
-                        if (contentType && contentType.indexOf("application/json") !== -1) {
-                            const data = await response.json();
-                            if (data && (data.data || data.object || data.signature || data.count !== undefined || data.result)) {
-                                data.simulated = false;
-                                return data;
-                            }
+                        const data = await response.json();
+                        if (data && (data.data || data.object || data.signature || data.count !== undefined || data.result)) {
+                            data.simulated = false;
+                            window.apiMemCache[targetUrl] = { timestamp: Date.now(), data: data };
+                            return data; 
                         }
+                    } else if (response.status === 429) {
+                        // Rate limited! NASA blocked the IP. Wait 1 second and try again.
+                        await new Promise(r => setTimeout(r, 1000));
+                        continue;
                     }
-                } catch (e) { console.warn("Local API proxy skipped/unavailable."); }
+                } catch (e) { break; /* Direct fetch failed (CORS/Network), move to proxies */ }
             }
-
-            // 2. DIRECT FETCH 
-            try {
-                // Using cache: 'no-store' forces the browser to re-request without appending illegal URL params
-                const response = await fetch(targetUrl, { cache: 'no-store' });
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data && (data.data || data.object || data.signature || data.count !== undefined || data.result)) {
-                        data.simulated = false;
-                        return data; 
-                    }
-                }
-            } catch (e) { console.warn("Direct fetch failed."); } 
             
-            // 3. PUBLIC CORS PROXIES (Expanded list with mixed encoding strategies)
+            // 2. PUBLIC CORS PROXIES (Using highly resilient wrapping endpoints)
             const PROXIES = [
-                `https://api.codetabs.com/v1/proxy?quest=${targetUrl}`,      // Prefers unencoded
-                `https://api.allorigins.win/raw?url=${encodedUrl}`,          // Prefers encoded
-                `https://corsproxy.io/?${encodedUrl}`,                       // Prefers encoded
-                `https://thingproxy.freeboard.io/fetch/${targetUrl}`         // Fallback legacy proxy
+                `https://api.allorigins.win/get?url=${encodedUrl}`,       // Safest: Wraps NASA JSON inside its own JSON
+                `https://api.codetabs.com/v1/proxy?quest=${targetUrl}`,   // Unencoded direct proxy
+                `https://corsproxy.io/?${targetUrl}`                      // High-speed CDN proxy
             ];
             
             for (let p = 0; p < PROXIES.length; p++) {
@@ -1724,11 +1701,12 @@
                         try {
                             const data = JSON.parse(text);
                             
-                            // Check for wrapped proxy contents (like allorigins non-raw mode)
+                            // Un-wrap allorigins /get JSON contents
                             if (data && data.contents) {
                                 const parsed = typeof data.contents === 'string' ? JSON.parse(data.contents) : data.contents;
                                 if (parsed && (parsed.data || parsed.object || parsed.signature || parsed.count !== undefined || parsed.result)) {
                                     parsed.simulated = false;
+                                    window.apiMemCache[targetUrl] = { timestamp: Date.now(), data: parsed };
                                     return parsed;
                                 }
                             }
@@ -1736,16 +1714,15 @@
                             // Standard payload return
                             if (data && (data.data || data.object || data.signature || data.count !== undefined || data.result)) {
                                 data.simulated = false;
+                                window.apiMemCache[targetUrl] = { timestamp: Date.now(), data: data };
                                 return data;
                             }
-                        } catch(err) {
-                            continue; // Skip if proxy returned HTML/XML error page
-                        }
+                        } catch(err) { continue; } // Skip if proxy returned HTML/XML error page
                     }
                 } catch (e) { continue; }
             }
             
-            // 4. OFFLINE CACHE FAILSAFE
+            // 3. OFFLINE CACHE FAILSAFE
             console.warn("Notice: NASA APIs blocked or rate-limited. Defaulting to offline cache.");
             
             if (targetUrl.includes('horizons.api')) {
@@ -1775,7 +1752,7 @@
                         (Math.random() * 10 + 5).toFixed(2), 
                         "0", 
                         "0", 
-                        (Math.random() * 12 + 16).toFixed(1)
+                        (Math.random() * 12 + 16).toFixed(1) // Broader magnitude generator 16 to 28
                     ]) 
                 };
             } else if (targetUrl.includes('sbdb.api')) {
@@ -2407,10 +2384,12 @@
             const tomorrowStr = new Date(Date.now() + 86400000).toISOString().split('T')[0];
             const cacheKey = 'nolasco_ephemeris_cache';
 
+            // 1. INSTANT LOCAL STORAGE CACHE CHECK
             try {
                 const cached = localStorage.getItem(cacheKey);
                 if (cached) {
                     const cacheData = JSON.parse(cached);
+                    // If the cache was stored today, use it immediately!
                     if (cacheData.date === todayStr && cacheData.planets) {
                         let cacheValid = true;
                         for (let i = 0; i < planetConfigs.length; i++) {
@@ -2421,7 +2400,7 @@
                                 p.w_synced = pCache.w_synced;
                                 p.e_synced = pCache.e_synced;
                                 p.hasEphemeris = true;
-                                p.isReady = true; 
+                                p.isReady = true; // Flags the animation to instantly spawn the planet
                             } else {
                                 cacheValid = false;
                             }
@@ -2435,12 +2414,13 @@
                                 ephemStatus.style.borderColor = 'rgba(0,255,204,0.3)';
                                 setTimeout(() => { ephemStatus.style.opacity = '0'; }, 5000);
                             }
-                            return; 
+                            return; // Exit early, skipping network requests completely!
                         }
                     }
                 }
             } catch (e) { console.warn("Cache read failed.", e); }
 
+            // 2. HIGH-SPEED CONCURRENT NASA FETCH
             try {
                 let syncSuccess = false;
                 const newCacheData = { date: todayStr, epochMS: Date.now(), planets: {} };
@@ -2470,17 +2450,21 @@
                     return false;
                 };
 
+                // BATCH PROCESSING: Fetch 4 planets concurrently at a time.
+                // This maximizes speed while keeping requests just under NASA's IP rate limiter.
                 const batchSize = 4;
                 for (let i = 0; i < planetConfigs.length; i += batchSize) {
                     const batch = planetConfigs.slice(i, i + batchSize);
                     const results = await Promise.all(batch.map(p => fetchPlanetData(p)));
                     if (results.some(r => r)) syncSuccess = true;
+                    
+                    // Tiny 200ms cooldown between batches to protect against HTTP 429 blocks
                     if (i + batchSize < planetConfigs.length) await new Promise(r => setTimeout(r, 200));
                 }
 
                 if (syncSuccess) {
                     window.systemEpochMS = newCacheData.epochMS;
-                    try { localStorage.setItem(cacheKey, JSON.stringify(newCacheData)); } catch(e) {} 
+                    try { localStorage.setItem(cacheKey, JSON.stringify(newCacheData)); } catch(e) {} // Save to local storage
                     
                     if (ephemStatus) {
                         ephemStatus.innerHTML = '● EPHEMERIS: SECURE';
@@ -2496,7 +2480,7 @@
                 }
             } catch (e) {
                 console.warn("Fatal Ephemeris failure.");
-                planetConfigs.forEach(p => p.isReady = true);
+                planetConfigs.forEach(p => p.isReady = true); // Failsafe
             }
             
             setTimeout(() => {
@@ -2780,9 +2764,6 @@
                 intro.style.opacity = '0';
                 setTimeout(() => { if (intro) intro.style.display = 'none'; }, 500);
             }
-            
-            const loreText = document.getElementById('lore-text-overlay');
-            if(loreText) loreText.style.opacity = '0';
             
             if (typeof window !== 'undefined' && window.TWEEN) {
                 window.TWEEN.removeAll();
